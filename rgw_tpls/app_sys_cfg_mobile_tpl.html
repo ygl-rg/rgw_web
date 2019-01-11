@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ title }}</title>
+    <meta http-equiv="content-type" content="text/html" charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+
+    <link rel="stylesheet" href="/jslib/dijit/themes/claro/claro.css">
+    <link rel="stylesheet" href="/jslib/dojo/resources/dojo.css">
+    <link rel="stylesheet" href="/jslib/dgrid/css/dgrid.css">
+    <link rel="stylesheet" href="/jslib/dgrid/css/skins/claro.css">
+    <link rel="stylesheet" href="/css/app.css">
+    <script src="/js/origin_patch.js"></script>
+    <script>
+        var dojoConfig = {
+            parseOnLoad: true, async: true,
+            packages: [
+                {"name": "shimmy", "location": location.pathname.match(/^\//) + "jslib/shimmy"},
+                {"name": "roundgis", "location": location.pathname.match(/^\//) + "js"},
+                {"name": "dgrid", "location": location.pathname.match(/^\//) + "jslib/dgrid"},
+                {"name": "dstore", "location": location.pathname.match(/^\//) + "jslib/dstore"},
+                {"name": "rgw", "location": location.pathname.match(/^\//) + "{{ app_js_dir }}"}
+            ]
+        };
+    </script>
+    <script>
+        //global env here
+        var BasicEnv = {
+            lang: "{{ user_lang }}",
+            curr_location: location.pathname.match(/^\//),
+            templatePath: location.pathname.match(/^\//) + "templates",
+            rgw_template_path: location.pathname.match(/^\//) + "{{ app_template_dir }}",
+            imgpath: location.pathname.match(/^\//) + "imgs",
+            standby: undefined,
+            main_grid: undefined,
+            poll_timer: undefined
+        };
+        BasicEnv.sessionid = "{{ sessionid }}";
+    </script>
+    <script src="/jslib/dojox/mobile/deviceTheme.js"></script>
+    <script src="/jslib/dojo/dojo.js"></script>
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+<body id="body_node" class="claro" style="visibility: hidden;">
+<div id="main_view_node" data-dojo-type="dojox/mobile/View" selected="true">
+    <div data-dojo-type="dojox/mobile/RoundRect">
+        <label>timezone:</label>
+        <div>
+            <select data-dojo-type="dijit/form/DataList"
+                        id="tz_select_list">
+                    {% for idx, tz_option in enumerate(tz_options) %}
+                        {% if idx == 0 %}
+                            <option value="{{ tz_option["value"] }}" selected="selected">{{ tz_option["label"] }}</option>
+                        {% else %}
+                            <option value="{{ tz_option["value"] }}">{{ tz_option["label"] }}</option>
+                        {% end %}
+                    {% end %}
+        </select>
+        <input id="tz_select_node" data-dojo-type="dojox/mobile/ComboBox" data-dojo-props='list:"tz_select_list"' />
+        </div>
+    </div>
+    <div data-dojo-type="dojox/mobile/RoundRect">
+            <label>password:</label>
+            <div>
+                <input data-dojo-type="dojox/mobile/TextBox"
+                       data-dojo-props="trim:true, prpercase:true"
+                       id="pwd_input_node"
+                       type="text"
+                       style="width: 10em;"/>
+            </div>
+    </div>
+        <div data-dojo-type="dojox/mobile/RoundRect">
+            <label>email sender:</label>
+            <div>
+                <input data-dojo-type="dojox/mobile/TextBox"
+                       data-dojo-props="trim:true, prpercase:true"
+                       id="email_sender_input_node"
+                       type="text"
+                       style="width: 16em;"/>
+            </div>
+        </div>
+        <div data-dojo-type="dojox/mobile/RoundRect">
+                <button data-dojo-type="dojox/mobile/Button"
+                    id="register_dev_btn_node">register devices</button>
+                <button data-dojo-type="dojox/mobile/Button"
+                    id="sync_dev_btn_node">sync devices</button>
+        </div>
+        <div data-dojo-type="dojox/mobile/RoundRect">
+                <button data-dojo-type="dojox/mobile/Button"
+                        id="ok_btn_node">save</button>
+                <button data-dojo-type="dojox/mobile/Button"
+                        id="restart_btn_node">restart</button>
+                <button data-dojo-type="dojox/mobile/Button"
+                        id="reboot_btn_node">reboot</button>
+        </div>
+</div>
+<div id="standby"></div>
+</body>
+<script>
+    require(["dojo/parser", "dojox/mobile", "dojox/mobile/compat", "dojox/mobile/ListItem",
+                "dijit/form/CheckBox",
+                "dojo/_base/declare", "dojo/_base/lang", "dojo/_base/connect", "dojo/window",
+                "dojo/on", "dojo/aspect", "dojo/query",
+                "dojo/dom", "dojo/dom-attr", "dojo/dom-construct", "dojo/dom-class", "dojo/dom-geometry", "dojo/_base/array",
+                "dojo/dom-style", "dojo/Deferred",
+                "dojo/promise/all", "dojo/cookie", "dojo/json", "dojo/sniff",
+                "dijit/registry", "dojox/timing",
+                "dojox/widget/Standby", "dojox/validate", "dojox/validate/web", "dgrid/OnDemandGrid", "dgrid/CellSelection", "dgrid/Editor",
+                "dgrid/extensions/ColumnHider", "dgrid/Keyboard",
+                "dstore/Memory",
+                "roundgis/rtutils", "roundgis/dojo_utils",
+                "rgw/sys_cfg_rpc",
+                "rgw/multi_lang",
+                "dojo/ready"],
+            function (parser, mobile,compat, MobileListItem, MobileCB, declare, lang, dconnect, dwin, on,
+                      aspect, query, dom, domattr, domc, domclass, dgeom, darray, domstyle,
+                      Deferred, all, dcookie, djson, dhas, registry,
+                      dxtiming, Standby, dx_validate, dx_validate_web, Grid, Selection, Editor, ColumnHider, Keyboard,
+                      Memory,
+                      rtutils, dojo_utils,
+                      sys_cfg_rpc,
+                      multi_lang, ready) {
+                ready(function () {
+                    var InitEnv = function () {
+                        BasicEnv.standby = new Standby({target: "body_node"});
+                        document.body.appendChild(BasicEnv.standby.domNode);
+                        BasicEnv.standby.startup();
+                    };
+
+                    var GetCfg = function () {
+                        BasicEnv.standby.show();
+                        rtutils.Rpc2Deferred(sys_cfg_rpc.GetCfg({"token": BasicEnv.sessionid})).then(
+                                function (result) {
+                                    BasicEnv.standby.hide();
+                                    SetUI(result);
+                                },
+                                function (err) {
+                                    BasicEnv.standby.hide();
+                                    rtutils.ReloadWhenExpired(err);
+                                    console.log(err);
+                                    SetHint("server error");
+                                }
+                        );
+                    };
+
+
+                    var SetHint = function (hint) {
+                        alert(hint);
+                    };
+
+                    var SetUI = function (mdl) {
+                        if(mdl) {
+                            registry.byId("tz_select_node").set("value", mdl.timezone || "UTC");
+                            registry.byId("pwd_input_node").set("value", mdl.pwd || "");
+                            registry.byId("email_sender_input_node").set("value", mdl.email_sender || "");
+                        }
+                    };
+
+                    var MakeModel = function () {
+                        var data = {};
+                        data.timezone = registry.byId("tz_select_node").get("value");
+                        data.pwd = registry.byId("pwd_input_node").get("value");
+                        var temp = registry.byId("email_sender_input_node").get("value");
+                        var emails = dx_validate.getEmailAddressList(temp);
+                        data.email_sender = (emails.length>0)?emails[0]:"";
+                        return data;
+                    };
+
+                    var SetCfg = function (mdl) {
+                        BasicEnv.standby.show();
+                        var deferobj = rtutils.Rpc2Deferred(sys_cfg_rpc.SetCfg({"token": BasicEnv.sessionid,
+                                                                                "cfg": mdl}));
+                        deferobj.then(
+                                function (result) {
+                                    rtutils.HideStandby(BasicEnv.standby, "body_node");
+                                    SetHint("ok");
+                                },
+                                function (err) {
+                                    rtutils.ReloadWhenExpired(err);
+                                    rtutils.HideStandby(BasicEnv.standby, "body_node");
+                                    SetHint(err.declaredType);
+                                }
+                        );
+                    };
+
+                    var TranslateUI = function() {
+                    };
+
+                    var AfterLogin = function () {
+                        domstyle.set("body_node", "visibility", "visible");
+                        domstyle.set("main_view_node", "visibility", "visible");
+                        GetCfg();
+                    };
+
+                    InitEnv();
+                    TranslateUI();
+                    AfterLogin();
+
+                    on(registry.byId("ok_btn_node"), "click", function (evt) {
+                        var rec = MakeModel();
+                        SetCfg(rec);
+                    });
+
+                    on(registry.byId("reboot_btn_node"), "click", function (evt) {
+                        BasicEnv.standby.show();
+                        rtutils.Rpc2Deferred(sys_cfg_rpc.RebootSys({"token": BasicEnv.sessionid})).then(
+                                function (result) {
+                                    BasicEnv.standby.hide();
+                                    SetUI(result);
+                                },
+                                function (err) {
+                                    BasicEnv.standby.hide();
+                                    rtutils.ReloadWhenExpired(err);
+                                    console.log(err);
+                                    SetHint("server error");
+                                }
+                        );
+                    });
+
+                    on(registry.byId("restart_btn_node"), "click", function (evt) {
+                        BasicEnv.standby.show();
+                        rtutils.Rpc2Deferred(sys_cfg_rpc.RestartSys({"token": BasicEnv.sessionid})).then(
+                                function (result) {
+                                    BasicEnv.standby.hide();
+                                    SetUI(result);
+                                },
+                                function (err) {
+                                    BasicEnv.standby.hide();
+                                    rtutils.ReloadWhenExpired(err);
+                                    console.log(err);
+                                }
+                        );
+                    });
+
+                    on(registry.byId("register_dev_btn_node"), "click", function (evt) {
+                        BasicEnv.standby.show();
+                        rtutils.Rpc2Deferred(sys_cfg_rpc.RegisterDevice({"token": BasicEnv.sessionid})).then(
+                                function (result) {
+                                    BasicEnv.standby.hide();
+                                    SetHint("registered "+result.length.toString()+" devices");
+                                },
+                                function (err) {
+                                    BasicEnv.standby.hide();
+                                    rtutils.ReloadWhenExpired(err);
+                                    console.log(err);
+                                }
+                        );
+                    });
+
+                    on(registry.byId("sync_dev_btn_node"), "click", function (evt) {
+                        BasicEnv.standby.show();
+                        rtutils.Rpc2Deferred(sys_cfg_rpc.SyncDevice({"token": BasicEnv.sessionid})).then(
+                                function (result) {
+                                    BasicEnv.standby.hide();
+                                    SetHint("ok");
+                                },
+                                function (err) {
+                                    BasicEnv.standby.hide();
+                                    rtutils.ReloadWhenExpired(err);
+                                    console.log(err);
+                                }
+                        );
+                    });
+
+                    on(registry.byId("tz_select_node"), "click", function(evt) {
+                        domattr.set(registry.byId("tz_select_node").domNode, "readonly", "readonly");
+                    })
+                });
+            });
+</script>
+</html>

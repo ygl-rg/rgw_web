@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ title }}</title>
+    <meta http-equiv="content-type" content="text/html" charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+
+    <link rel="stylesheet" href="/jslib/dijit/themes/claro/claro.css">
+    <link rel="stylesheet" href="/jslib/dgrid/css/dgrid.css">
+    <link rel="stylesheet" href="/jslib/dgrid/css/skins/claro.css">
+    <link rel="stylesheet" href="/jslib/dojo/resources/dojo.css">
+    <link rel="stylesheet" href="/css/app.css">
+    <script src="/js/origin_patch.js"></script>
+    <script type="text/javascript"
+            src="/jslib/My9748/WdatePicker.js">
+    </script>
+    <script>
+        var dojoConfig= { parseOnLoad: true, async: true,
+            packages: [
+                {"name": "shimmy", "location": location.pathname.match(/^\//) + "jslib/shimmy"},
+                {"name": "roundgis", "location": location.pathname.match(/^\//) + "js"},
+                {"name": "dgrid", "location": location.pathname.match(/^\//) + "jslib/dgrid"},
+                {"name": "dstore", "location": location.pathname.match(/^\//) + "jslib/dstore"},
+                {"name": "rgw", "location": location.pathname.match(/^\//) + "{{ app_js_dir }}"}
+            ]
+        };
+    </script>
+    <script>
+        //global env here
+        var BasicEnv = {currlocation: location.pathname.match(/^\//),
+                        templatePath: location.pathname.match(/^\//) + "templates",
+                        rgw_template_path: location.pathname.match(/^\//) + "{{ app_template_dir }}",
+                        imgpath: location.pathname.match(/^\//)+"imgs"
+                       };
+        BasicEnv.searchinput = {};
+        BasicEnv.sessionid = "{{ sessionid }}";
+        BasicEnv.switchid = "{{ switchid }}";
+        BasicEnv.lang = "{{ user_lang }}";
+    </script>
+
+    <script src="/jslib/dojo/dojo.js"></script>
+
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        html,body,#mainwindow {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+        }
+    </style>
+</head>
+<body class="claro">
+    <div data-dojo-type="dijit/layout/ContentPane"
+         style="overflow-y: hidden;" id="mainwindow">
+        <div style="width: 99%; margin-bottom: 5px; margin-left: 4px;">
+                <span>{{ switch_name }}</span>
+                <span style="padding-left: 4px;"></span>
+                <input type="text" id="start_time_node1" />
+                <input type="text" id="start_time_node2" />
+                <input type="text" id="stop_time_node" />
+                <div style="display: inline-block;position: relative; top:10px; margin-left: 1em; margin-right: 1em;">
+                    <input type="radio" data-dojo-type="dijit/form/RadioButton"
+                           id="radio1" name="search_type" checked value="monthly" /><label for="radio1">monthly</label><br />
+                    <input type="radio" data-dojo-type="dijit/form/RadioButton"
+                           id="radio2" name="search_type" value="range" /><label for="radio2">range</label>
+                </div>
+                <button data-dojo-type="dijit/form/Button"
+                        id="query_btn_node">{{ query_btn_label }}</button>
+        </div>
+        <div id="grid_node" style="width:99%; height: 85%; margin-left: 2px;"></div>
+    </div>
+<div id="standby"></div>
+
+<script>
+require(["dojo/parser", "dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-style", "dojo/aspect", "dojo/query", "dojo/_base/declare",
+    "dojo/_base/lang", "dojo/_base/array", "dojo/sniff",
+    "dijit/registry", "dijit/form/Select", "dijit/layout/TabContainer", "dijit/layout/ContentPane",
+    "dijit/form/Button", "dgrid/Keyboard",
+    "dojox/widget/Standby",  "roundgis/rtutils", "rgw/em_rpc",
+    "dgrid/OnDemandGrid", "dgrid/CellSelection","dstore/Memory",
+    "dojo/ready"],
+        function(parser, on, dom, domc, doms, aspect, query, declare, lang, darray, dhas, registry, Select,
+                 TabContainer, ContentPane, Button, Keyboard, Standby,
+                 rtutils, em_rpc, Grid,
+                 CellSelection, Memory,
+                 ready) {
+            ready(function() {
+                var initEnv = function() {
+                    BasicEnv.standby = new Standby({target:"mainwindow"});
+                    BasicEnv.tracker_store = new Memory({idProperty: "trackerid"});
+                    BasicEnv.store = new Memory({idProperty: "id"});
+                    document.body.appendChild(BasicEnv.standby.domNode);
+                    BasicEnv.standby.startup();
+                    BasicEnv.range_cols_tbl = {
+                        "en": [
+                                {field: "id", label: ""},
+                                {field: "val", label: "Switch On Duration"},
+                                {field: "start_ts", label: "Start"},
+                                {field: "stop_ts", label: "Stop"}
+                            ],
+                        "zh-cn": [
+                                {field: "id", label: ""},
+                                {field: "val", label: "开启时长"},
+                                {field: "start_ts", label: "开始"},
+                                {field: "stop_ts", label: "结束"}
+                            ],
+                        "zh-tw": [
+                                {field: "id", label: ""},
+                                {field: "val", label: "開啟時長"},
+                                {field: "start_ts", label: "開始"},
+                                {field: "stop_ts", label: "結束"}
+                            ],
+                        "vn": [
+                                {field: "id", label: ""},
+                                {field: "val", label: "Bật thời lượng"},
+                                {field: "start_ts", label: "bắt đầu"},
+                                {field: "stop_ts", label: "dừng lại"}
+                            ],
+                        "kh": [
+                                {field: "id", label: ""},
+                                {field: "val", label: "ប្ដូររយៈពេល"},
+                                {field: "start_ts", label: "ការចាប់ផ្តើម"},
+                                {field: "stop_ts", label: "បញ្ឈប់"}
+                            ]
+                    };
+
+                    BasicEnv.monthly_cols_tbl = {
+                        "en": [
+                                {field: "id", label: ""},
+                                {field: "val", label: "Switch On Duration"},
+                                {field: "start_ts", label: "Date"}
+                            ],
+                        "zh-cn": [
+                                {field: "id", label: ""},
+                                {field: "val", label: "开启时长"},
+                                {field: "start_ts", label: "日期"}
+                            ],
+                        "zh-tw": [
+                                {field: "id", label: ""},
+                                {field: "val", label: "開啟時長"},
+                                {field: "start_ts", label: "日期"}
+                            ],
+                        "vn": [
+                                {field: "id", label: ""},
+                                {field: "val", label: "Bật thời lượng"},
+                                {field: "start_ts", label: "ngày"}
+                            ],
+                        "kh": [
+                                {field: "id", label: ""},
+                                {field: "val", label: "ប្ដូររយៈពេល"},
+                                {field: "start_ts", label: "កាលបរិច្ឆេត"}
+                            ]
+                    };
+
+                    BasicEnv.start_time_node1 = dom.byId("start_time_node1");
+                    BasicEnv.start_time_node2 = dom.byId("start_time_node2");
+                    BasicEnv.stop_time_node = dom.byId("stop_time_node");
+                    doms.set(BasicEnv.stop_time_node, "display", "none");
+                    doms.set(BasicEnv.start_time_node2, "display", "none");
+                    BasicEnv.query_btn_node = registry.byId("query_btn_node");
+                };
+
+                var SearchInputValid = function(col_type) {
+                    if(col_type == "range") {
+                        if(BasicEnv.start_time_node2.value && BasicEnv.stop_time_node.value) {
+                            return true;
+                        }
+                        else {
+                            return false;
+                        }
+                    }
+                    else {
+                        if(BasicEnv.start_time_node1.value) {
+                            return true;
+                        }
+                        else {
+                            return false;
+                        }
+                    }
+                };
+
+                var GetSearchNo = function() {
+                    var radio1 = registry.byId("radio1");
+                    if(radio1.get("checked")) {
+                        return radio1.get("value");
+                    }
+                    else {
+                        return registry.byId("radio2").get("value")
+                    }
+                };
+
+                var GetSearchArg = function() {
+                    var result = {
+                        "switchid": BasicEnv.switchid,
+                        "search_no": GetSearchNo()
+                    };
+                    if(result.search_no == "range") {
+                        result.start_ts = rtutils.date2ts(new Date(BasicEnv.start_time_node2.value));
+                        result.stop_ts = rtutils.date2ts(new Date(BasicEnv.stop_time_node.value));
+                    }
+                    else {
+                        var dt_obj = new Date(BasicEnv.start_time_node1.value);
+                        var temp = rtutils.GetYearMonth(dt_obj);
+                        result.year = temp[0];
+                        result.month = temp[1];
+                    }
+                    return result;
+                };
+
+                var RenderGridRow = function(row, args) {
+                    query(".field-val", row).forEach(function(node) {
+                        setDurationCell(args[0], node);
+                    });
+                    query(".field-start_ts", row).forEach(function(node) {
+                        SetTimeCell(args[0].start_ts, node);
+                    });
+                    query(".field-stop_ts", row).forEach(function(node) {
+                        SetTimeCell(args[0].stop_ts, node);
+                    });
+                    return row;
+                };
+
+                var setDurationCell = function(grid_entry, cell_node) {
+                    cell_node.innerHTML = rtutils.seconds2hhmmss(grid_entry.val);
+                };
+
+                var SetTimeCell = function(ts, cell_node) {
+                    if(GetSearchNo() == "range") {
+                        cell_node.innerHTML = rtutils.DT2Str(rtutils.ts2date(ts));
+                    }
+                    else {
+                        cell_node.innerHTML = rtutils.Date2Str(rtutils.ts2date(ts));
+                    }
+                };
+
+                var initGrid = function(col_type) {
+                    BasicEnv.grid = new declare([Grid, CellSelection, Keyboard])({
+                        columns: (col_type=="range")?rtutils.GetLangField(BasicEnv.range_cols_tbl, BasicEnv.lang):rtutils.GetLangField(BasicEnv.monthly_cols_tbl, BasicEnv.lang),
+                        selectionMode: "single",
+                        cellNavigation: true,
+                        collection: BasicEnv.store,
+                        minRowsPerPage:200}, "grid_node");
+                    BasicEnv.grid.startup();
+
+                    aspect.after(BasicEnv.grid, "renderRow", function(row, args) {
+                        return RenderGridRow(row, args);
+                    });
+                };
+
+                var setGrid = function(dataset, col_type) {
+                    if(!BasicEnv.grid) {
+                        initGrid(col_type);
+                    }
+                    BasicEnv.grid.set("columns", (col_type=="range")?rtutils.GetLangField(BasicEnv.range_cols_tbl, BasicEnv.lang):rtutils.GetLangField(BasicEnv.monthly_cols_tbl, BasicEnv.lang));
+                    BasicEnv.store.setData(dataset);
+                    BasicEnv.grid.refresh();
+                };
+
+                var MakeGridItem = function(record, col_type) {
+                    if(col_type == "range") {
+                        return {
+                            "val": record.val,
+                            "start_ts": record.start_ts,
+                            "stop_ts": record.stop_ts,
+                            "switchid": record.switchid
+                        };
+                    }
+                    else {
+                        return {
+                            "val": record.val,
+                            "start_ts": record.start_ts,
+                            "stop_ts": record.stop_ts,
+                            "switchid": record.switchid
+                        };
+                    }
+                };
+
+                var AfterLogin = function() {
+                };
+
+                initEnv();
+                AfterLogin();
+
+                on(BasicEnv.start_time_node1, "click", function(evt) {
+                    if(dhas("ie") || dhas("ff")) {
+                        WdatePicker({dateFmt:'yyyy-MM', lang:'en', readOnly: true});
+                    }
+                    else {
+                        WdatePicker({dateFmt:'yyyy/MM', lang:'en', readOnly: true});
+                    }
+                });
+
+                on(BasicEnv.start_time_node2, "click", function(evt) {
+                    if(dhas("ie") || dhas("ff")) {
+                        WdatePicker({dateFmt:'yyyy-MM-dd HH:mm', lang:'en', readOnly: true});
+                    }
+                    else {
+                        WdatePicker({dateFmt:'yyyy/MM/dd HH:mm', lang:'en', readOnly: true});
+                    }
+                });
+
+                on(BasicEnv.stop_time_node, "click", function(evt) {
+                    if(dhas("ie") || dhas("ff")) {
+                        WdatePicker({dateFmt:'yyyy-MM-dd HH:mm', lang:'en', readOnly: true});
+                    }
+                    else {
+                        WdatePicker({dateFmt:'yyyy/MM/dd HH:mm', lang:'en', readOnly: true});
+                    }
+                });
+
+                on(registry.byId("radio1"), "change", function(evt) {
+                    if(evt) {
+                        doms.set(BasicEnv.start_time_node2, "display", "none");
+                        doms.set(BasicEnv.stop_time_node, "display", "none");
+                        doms.set(BasicEnv.start_time_node1, "display", "");
+                    }
+                    BasicEnv.start_time_node1.value = "";
+                    BasicEnv.start_time_node2.value = "";
+                    BasicEnv.stop_time_node.value = "";
+                });
+
+                on(registry.byId("radio2"), "change", function(evt) {
+                    if(evt) {
+                        doms.set(BasicEnv.stop_time_node, "display", "");
+                        doms.set(BasicEnv.start_time_node2, "display", "");
+                        doms.set(BasicEnv.start_time_node1, "display", "none");
+                    }
+                    BasicEnv.start_time_node1.value = "";
+                    BasicEnv.start_time_node2.value = "";
+                    BasicEnv.stop_time_node.value = "";
+                });
+
+                on(BasicEnv.query_btn_node, "click", function(evt) {
+                    if(SearchInputValid(GetSearchNo())) {
+                        BasicEnv.standby.show();
+                        BasicEnv.search_arg = GetSearchArg();
+                        BasicEnv.search_arg["token"] = BasicEnv.sessionid;
+                        var defer_obj = rtutils.Rpc2Deferred(em_rpc.GetSwitchOnDetail(BasicEnv.search_arg));
+                        defer_obj.then(
+                                function(result) {
+                                    BasicEnv.standby.hide();
+                                    if(result.recs.length>0) {
+                                        var items = [];
+                                        for(var i = 0; i!== result.recs.length; ++i) {
+                                            var item = MakeGridItem(result.recs[i], BasicEnv.search_arg.search_no);
+                                            item.id = i+1;
+                                            items.push(item);
+                                        }
+                                        setGrid(items, BasicEnv.search_arg.search_no);
+                                    }
+                                    else {
+                                        setGrid([], BasicEnv.search_arg.search_no);
+                                    }
+                                },
+                                function(err) {
+                                    BasicEnv.standby.hide();
+                                    if(err.declaredType == "SessionExpired") {
+                                        window.location.reload(true);
+                                    }
+                                    else {
+                                        alert("server error");
+                                    }
+                                }
+                        );
+                    }
+                    else {
+                        if(GetSearchNo() == "range") {
+                            alert("start time & stop time are required");
+                        }
+                        else {
+                            alert("start time is required");
+                        }
+                    }
+                });
+            });
+        });
+</script>
+</body>
+</html>

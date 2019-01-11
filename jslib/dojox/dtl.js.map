@@ -1,0 +1,8 @@
+{
+"version":3,
+"file":"dtl.js",
+"lineCount":2,
+"mappings":"A;AAAAA,MAAA,CAAO,WAAP,CAAoB,CAAC,aAAD,CAApB,CAAqC,QAAQ,CAACC,CAAD,CAAO,CAQnD,MAAOA,EAR4C,CAApD;",
+"sources":["dtl.js.uncompressed.js"],
+"names":["define","dxdtl"]
+}

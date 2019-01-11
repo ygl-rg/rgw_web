@@ -1,0 +1,8 @@
+{
+"version":3,
+"file":"RequestMemory.js",
+"lineCount":2,
+"mappings":"A;AAAAA,MAAA,CAAO,sBAAP,CAA+B,CAC9B,oBAD8B,CAE9B,WAF8B,CAG9B,SAH8B,CAA/B,CAIG,QAAQ,CAACC,CAAD,CAAUC,CAAV,CAAmBC,CAAnB,CAA0B,CACpC,MAAOF,EAAA,CAAQ,CAAEC,CAAF,CAAWC,CAAX,CAAR,CAA4B,CAClCC,WAAYA,QAAS,EAAG,CACvB,IAAAC,UAAA,CAAeC,SAAf,CACA,KAAAC,MAAA,EAFuB,CADU,CAKlCC,kBAAmB,CAAA,CALe,CAA5B,CAD6B,CAJrC;",
+"sources":["RequestMemory.js.uncompressed.js"],
+"names":["define","declare","Request","Cache","postscript","inherited","arguments","fetch","isValidFetchCache"]
+}

@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ title }}</title>
+    <meta http-equiv="content-type" content="text/html" charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+
+    <link rel="stylesheet" href="/v/jslib/dojo/resources/dojo.css">
+    <link rel="stylesheet" href="/v/jslib/dgrid/css/dgrid.css">
+    <link rel="stylesheet" href="/v/jslib/dgrid/css/skins/claro.css">
+    <link rel="stylesheet" href="/v/jslib/dijit/themes/claro/claro.css">
+    <script>
+        var dojoConfig= { parseOnLoad: true, async: true,
+            packages: [
+                {"name": "roundgis", "location": location.pathname.match(/^\//) + "v/js"},
+                {"name": "dgrid", "location": location.pathname.match(/^\//) + "v/jslib/dgrid" },
+                {"name": "dstore", "location": location.pathname.match(/^\//)+"v/jslib/dstore"},
+                {"name": "rgv", "location": location.pathname.match(/^\//) + "{{ app_js_dir }}"}
+            ]
+        };
+    </script>
+    <script>
+        //global env here
+        var BasicEnv = {templatePath: location.pathname.match(/^\//) + "templates",
+                        rgv_template_path: location.pathname.match(/^\//) + "{{ app_template_dir }}"};
+        BasicEnv.sessionid = "{{ sessionid }}";
+        BasicEnv.triggerid = {{ triggerid }};
+        BasicEnv.lang = "{{ user_lang }}";
+    </script>
+
+    <script src="/v/jslib/dojo/dojo.js"></script>
+
+    <script type="text/javascript"
+            src="/v/jslib/My9748/WdatePicker.js">
+    </script>
+
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        html,body,#main_window {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+        }
+
+        .field-sensor_grid_watched {
+            width: 2em;
+        }
+
+        .field-switch_grid_watched {
+            width: 2em;
+        }
+    </style>
+</head>
+<body class="claro" id="body_node">
+    <div data-dojo-type="dijit/layout/BorderContainer" id="main_window"
+         data-dojo-props="gutters: true, showTitle:false, iconClass: 'dijit_tab_icon_map'">
+        <div data-dojo-type="dijit/layout/ContentPane"
+             data-dojo-props="region: 'center', splitter:true">
+            <table style="margin: 0 auto;">
+                <tr>
+                    <td>{{ sensor_label }}: </td>
+                    <td>
+                        <select data-dojo-type="dijit/form/Select"
+                                id="sensor_select_node">
+                            {% for idx, tbl in enumerate(sensor_tbls) %}
+                                {% set selected_str = "selected" if idx == 0 else "" %}
+                                <option value="{{ tbl['value'] }}" selected="{{ selected_str }}">{{ tbl['label'] }}</option>
+                            {% end %}
+                        </select>
+                        <select data-dojo-type="dijit/form/Select"
+                                id="op_select_node">
+                            <option value=">" selected="1">></option>
+                            <option value=">=">>=</option>
+                            <option value="<"><</option>
+                            <option value="<="><=</option>
+                            <option value="=">=</option>
+                            <option value="<>"><></option>
+                        </select>
+                        <input data-dojo-type="dijit/form/TextBox"
+                            data-dojo-props="trim:true,prpercase:true"
+                            type="text"
+                            id="rval_input_node" required="true"
+                            style="width: 5em;"/>
+                    </td>
+                </tr>
+                <tr>
+                    <td>{{ switch_label }}: </td>
+                    <td>
+                        <select data-dojo-type="dijit/form/Select"
+                                id="switch_select_node">
+                            {% for idx, tbl in enumerate(switch_tbls) %}
+                                {% set selected_str = "selected" if idx == 0 else "" %}
+                                <option value="{{ tbl['value'] }}" selected="{{ selected_str }}">{{ tbl['label'] }}</option>
+                            {% end %}
+                        </select>
+                        <select data-dojo-type="dijit/form/Select"
+                                id="action_select_node">
+                            <option value="ON" selected="1">ON</option>
+                            <option value="OFF" selected="1">OFF</option>
+                        </select>
+                        <input data-dojo-type="dijit/form/TextBox"
+                               data-dojo-props="trim:true,prpercase:true"
+                               type="text"
+                               id="working_seconds_input_node" required="true"
+                               style="width: 5em;"/></td>
+                    </td>
+                </tr>
+                <tr>
+                    <td>{{ name_label }}: </td>
+                    <td><input data-dojo-type="dijit/form/TextBox"
+                            data-dojo-props="trim:true,prpercase:true"
+                            type="text"
+                            id="name_input_node" required="true"
+                            style="width: 10em;"/></td>
+                </tr>
+                <tr>
+                    <td><label>{{ start_time_label }}:</label></td>
+                    <td><input data-dojo-type="dijit/form/TextBox"
+                               data-dojo-props="trim:true,prpercase:true" type="text" style="width:9em;"
+                               id="start_time_input_node" readonly />
+                        <img id="start_time_img_node" src="/jslib/My9748/skin/datePicker.gif" width="16" height="22"
+                             align="absmiddle" />
+                    </td>
+                </tr>
+                <tr>
+                    <td><label>{{ stop_time_label }}:</label></td>
+                    <td><input data-dojo-type="dijit/form/TextBox"
+                               data-dojo-props="trim:true,prpercase:true" type="text" style="width:9em;"
+                               id="stop_time_input_node" readonly />
+                        <img id="stop_time_img_node" src="/jslib/My9748/skin/datePicker.gif" width="16" height="22"
+                             align="absmiddle" />
+                    </td>
+                </tr>
+                <tr>
+                    <td><label>{{ check_interval_label }}</label></td>
+                    <td>
+                        <select data-dojo-type="dijit/form/Select"
+                                id="check_interval_select_node">
+                            {% for idx, tbl in enumerate(check_interval_tbls) %}
+                                {% set selected_str = "selected" if idx == 0 else "" %}
+                            <option value="{{ tbl['value'] }}" selected="{{ selected_str }}">{{ tbl['label'] }}</option>
+                            {% end %}
+                        </select>
+                        <span style="width: 4px;"></span>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="4">
+                        <button data-dojo-type="dijit/form/Button"
+                                id="add_sensor_btn_node">{{ add_btn }}</button>
+
+                        <button data-dojo-type="dijit/form/Button"
+                                id="remove_sensor_btn_node">{{ remove_btn }}</button>
+                        <button data-dojo-type="dijit/form/Button"
+                                id="ok_btn_node">{{ save_btn }}</button>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <div data-dojo-type="dijit/layout/BorderContainer"
+             data-dojo-props="region: 'bottom',doLayout: true"
+             style="height: 60%;">
+            <div style="width: 50%;"
+            data-dojo-type="dijit/layout/ContentPane"
+            data-dojo-props="region: 'center'">
+                <div style="position: relative; width:100%; height: 95%;"
+                     id="switch_grid_node">
+                </div>
+            </div>
+            <div style="width: 50%;"
+            data-dojo-type="dijit/layout/ContentPane"
+            data-dojo-props="region: 'trailing', splitter:true">
+                <div style="position: relative; width:100%; height: 95%;"
+                     id="sensor_grid_node">
+                </div>
+            </div>
+        </div>
+    </div>
+<div id="standby"></div>
+
+<script>
+require(["dojo/parser", "dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-style", "dojo/aspect", "dojo/query", "dojo/_base/declare",
+         "dojo/_base/lang", "dojo/_base/array",
+         "dijit/registry", "dijit/form/Select", "dijit/form/TextBox", "dijit/form/ValidationTextBox",
+         "dijit/form/Textarea", "dijit/form/CheckBox", "dijit/layout/BorderContainer", "dijit/layout/ContentPane",
+         "dojox/widget/Standby",  "roundgis/rtutils", "roundgis/dojo_utils", "dstore/Memory",
+         "dojox/validate", "dgrid/OnDemandGrid", "dgrid/CellSelection", "dgrid/Editor",
+         "dgrid/Keyboard",
+         "rgv/sensor_trigger_rpc",
+         "dojo/ready"],
+        function(parser, on, dom, domc, doms, aspect, query, declare, lang, darray, registry, Select, TextBox, ValidationTextBox,
+                 Textarea, CheckBox, BornderContainer, ContentPane,
+                 Standby,
+                 rtutils, dojo_utils, Memory, dx_validate,
+                 Grid, Selection, Editor, Keyboard,
+                 action_rpc,
+                 ready) {
+            ready(function() {
+                var InitEnv = function() {
+                    BasicEnv.standby_obj = new Standby({target:"main_window"});
+                    document.body.appendChild(BasicEnv.standby_obj.domNode);
+                    BasicEnv.sensor_col_tbl = {
+                        "eng": [
+                            {
+                                label: " ",
+                                field: "sensor_grid_watched",
+                                autoSave: true,
+                                unhidable: true,
+                                editor: "checkbox"
+                            },
+                            {field: "sensor_name", label: "Name"},
+                            {field: "expr", label: "Expr"}
+                        ],
+                        "zho": [
+                            {
+                                label: " ",
+                                field: "sensor_grid_watched",
+                                autoSave: true,
+                                unhidable: true,
+                                editor: "checkbox"
+                            },
+                            {field: "sensor_name", label: "名字"},
+                            {field: "expr", label: "条件"}
+                        ]
+                    };
+                    BasicEnv.switch_col_tbl = {
+                        "eng": [
+                            {
+                                label: " ",
+                                field: "switch_grid_watched",
+                                autoSave: true,
+                                unhidable: true,
+                                editor: "checkbox"
+                            },
+                            {field: "switch_name", label: "Name"},
+                            {field: "action_no", label: "Action"},
+                            {field: "working_seconds", label: "Working"}
+                        ],
+                        "zho": [
+                            {
+                                label: " ",
+                                field: "switch_grid_watched",
+                                autoSave: true,
+                                unhidable: true,
+                                editor: "checkbox"
+                            },
+                            {field: "switch_name", label: "名字"},
+                            {field: "action_no", label: "动作"},
+                            {field: "working_seconds", label: "时长"}
+                        ]
+                    };
+                    BasicEnv.sensor_store = new Memory({idProperty: "sensorid"});
+                    BasicEnv.switch_store = new Memory({idProperty: "switchid"});
+                    BasicEnv.standby_obj.startup();
+                };
+
+                var AfterInit = function() {
+                    InitSensorGrid();
+                    InitSwitchGrid();
+                    if(BasicEnv.triggerid > 0) {
+                        GetTrigger();
+                    }
+                };
+
+                var SetHint = function(hint) {
+                    alert(hint);
+                };
+
+                var InitSensorGrid = function() {
+                        BasicEnv.sensor_grid = new declare([Grid, Selection, Keyboard, Editor])({
+                            columns: rtutils.GetLangField(BasicEnv.sensor_col_tbl, BasicEnv.lang),
+                            selectionMode: "single",
+                            cellNavigation: true,
+                            collection: BasicEnv.sensor_store,
+                            minRowsPerPage: 200
+                        }, "sensor_grid_node");
+                        BasicEnv.sensor_grid.startup();
+                        aspect.after(BasicEnv.sensor_grid, "renderRow", function (row, args) {
+                            return RenderSensorGridRow(row, args);
+                        });
+                };
+
+                var RenderSensorGridRow = function (row, args) {
+                    query(".field-expr", row).forEach(function(node) {
+                        node.innerHTML = args[0].op+args[0].rval;
+                    });
+                    return row;
+                };
+
+                var InitSwitchGrid = function () {
+                        BasicEnv.switch_grid = new declare([Grid, Selection, Keyboard, Editor])({
+                            columns: rtutils.GetLangField(BasicEnv.switch_col_tbl, BasicEnv.lang),
+                            selectionMode: "single",
+                            cellNavigation: true,
+                            collection: BasicEnv.switch_store,
+                            minRowsPerPage: 200
+                        }, "switch_grid_node");
+                        BasicEnv.switch_grid.startup();
+                        aspect.after(BasicEnv.switch_grid, "renderRow", function (row, args) {
+                            return RenderSwitchGridRow(row, args);
+                        });
+                        on(BasicEnv.switch_grid, "dgrid-select", function (evt) {
+                            if (evt.cells[0].column.field == "id") {
+                            }
+                            else {
+                            }
+                        });
+                };
+
+                var RenderSwitchGridRow = function (row, args) {
+                    var SetWorkingSeconds = function(switch_mdl, cell_node) {
+                        if(switch_mdl.working_seconds > 0) {
+                            cell_node.innerHTML = rtutils.seconds2hhmmss(switch_mdl.working_seconds);
+                        }
+                        else {
+                            cell_node.innerHTML = "N/A";
+                        }
+                    };
+                    query(".field-working_seconds", row).forEach(function(node) {
+                        SetWorkingSeconds(args[0], node);
+                    });
+                    return row;
+                };
+
+
+                var MakeTrigger = function() {
+                    var data = {};
+                    data.id = BasicEnv.triggerid;
+                    data.sensors = [];
+                    data.switches = [];
+                    var sensors = BasicEnv.sensor_store.fetchSync();
+                    for(var i = 0; i!=sensors.length; ++i) {
+                        data.sensors.push({
+                            "sensorid": sensors[i].sensorid,
+                            "op": sensors[i].op,
+                            "rval": sensors[i].rval
+                        });
+                    }
+                    var switches = BasicEnv.switch_store.fetchSync();
+                    for(var i = 0; i!=switches.length; ++i) {
+                        data.switches.push({
+                            "switchid": switches[i].switchid,
+                            "working_seconds": switches[i].working_seconds,
+                            "action_no": switches[i].action_no
+                        });
+                    }
+                    data.name = registry.byId("name_input_node").get("value");
+                    data.check_interval = parseInt(registry.byId("check_interval_select_node").get("value"));
+                    var temp = registry.byId("start_time_input_node").get("value");
+                    if(temp.length>0) {
+                        data.start_ts = rtutils.date2ts(new Date(temp));
+                    }
+                    else {
+                        data.start_ts = 0;
+                    }
+                    temp = registry.byId("stop_time_input_node").get("value");
+                    if(temp.length>0) {
+                        data.stop_ts = rtutils.date2ts(new Date(temp));
+                    }
+                    else {
+                        data.stop_ts = 0;
+                    }
+                    return data;
+                };
+
+                var SetTrigger = function(action_obj) {
+                    BasicEnv.standby_obj.show();
+                    var deferobj = rtutils.Rpc2Deferred(action_rpc.SetTrigger({"token": BasicEnv.sessionid,
+                                                                              "trigger": action_obj}));
+                    deferobj.then(
+                            function(result) {
+                                rtutils.HideStandby(BasicEnv.standby_obj, "main_window");
+                                SetHint("ok");
+                            },
+                            function(err) {
+                                rtutils.ReloadWhenExpired(err);
+                                rtutils.HideStandby(BasicEnv.standby_obj, "main_window");
+                                if(err.declaredType == "SqliteIntegrityError") {
+                                    SetHint("id or name is duplicated");
+                                }
+                                else if(err.declaredType == "ExprError") {
+                                    SetHint("expr error")
+                                }
+                                else {
+                                    SetHint("server error");
+                                }
+                            }
+                        );
+                };
+
+                var GetTrigger = function() {
+                    rtutils.ShowStandby(BasicEnv.standby_obj, "main_window");
+                    var deferobj = rtutils.Rpc2Deferred(action_rpc.GetTrigger({"token": BasicEnv.sessionid,
+                                                                               "triggerid": BasicEnv.triggerid}));
+                    deferobj.then(
+                            function(result) {
+                                rtutils.HideStandby(BasicEnv.standby_obj, "main_window");
+                                SetUI(result);
+                            },
+                            function(err) {
+                                rtutils.ReloadWhenExpired(err);
+                                SetHint(err.declaredType+" "+err.msg);
+                                rtutils.HideStandby(BasicEnv.standby_obj, "main_window");
+                            }
+                        );
+                };
+
+                var SetUI = function(mdl) {
+                    registry.byId("name_input_node").set("value", mdl.name);
+                    registry.byId("check_interval_select_node").set("value", mdl.check_interval.toString());
+                    for(var i = 0; i!=mdl.sensors.length; ++i) {
+                        mdl.sensors[i]["sensor_grid_watched"] = false;
+                    }
+                    for(var i = 0; i!=mdl.switches.length; ++i) {
+                        mdl.switches[i]["switch_grid_watched"] = false;
+                    }
+                    BasicEnv.sensor_store.setData(mdl.sensors);
+                    BasicEnv.switch_store.setData(mdl.switches);
+                    BasicEnv.sensor_grid.refresh();
+                    BasicEnv.switch_grid.refresh();
+                };
+
+                var GetExpr = function() {
+                    var val_str = registry.byId("val_input_node").get("value");
+                    if(val_str.length == 0) {
+                        throw "val is blank";
+                    }
+                    var op_str = registry.byId("op_select_node").get("value");
+                    return op_str+val_str;
+                };
+
+                var GetSwitchAction = function() {
+                    var action_no = registry.byId("action_select_node").get("value");
+                    if(action_no == "ON") {
+                        var secs = parseInt(registry.byId("working_seconds_input_node").get("value"));
+                        if(!rtutils.IsValidNumber(secs)) {
+                            throw "working seconds must be a number";
+                        }
+                        else if(secs<15) {
+                            throw "working seconds must >= 15 seconds";
+                        }
+                        else {
+                            return [action_no, secs];
+                        }
+                    }
+                    else {
+                        return [action_no, null];
+                    }
+                };
+
+                var AddTriggerItemToGrid = function() {
+                    try {
+                        var sensorid = registry.byId("sensor_select_node").get("value");
+                        var row1 = {"sensorid": sensorid,
+                                    "op": registry.byId("op_select_node").get("value"),
+                                    "rval": registry.byId("rval_input_node").get("value"),
+                                    "sensor_grid_watched": false,
+                                   "sensor_name": registry.byId("sensor_select_node").get("displayedValue")};
+                        if(row1['rval'].length > 0) {
+                            BasicEnv.sensor_store.putSync(row1);
+                            BasicEnv.sensor_grid.refresh();
+                        }
+                    }
+                    catch(e) {
+                        SetHint(e);
+                    }
+                    try {
+                        var switchid = registry.byId("switch_select_node").get("value");
+                        var action_array = GetSwitchAction();
+                        var row2 = {"switchid": switchid, "switch_grid_watched": false,
+                                   "action_no": action_array[0],
+                                   "working_seconds": action_array[1],
+                                   "switch_name": registry.byId("switch_select_node").get("displayedValue")};
+                        BasicEnv.switch_store.putSync(row2);
+                        BasicEnv.switch_grid.refresh();
+                    }
+                    catch(e) {
+                        SetHint(e);
+                    }
+                };
+
+                var RemoveTriggerItemFromGrid = function() {
+                    var ids = BasicEnv.sensor_store.filter({"sensor_grid_watched": true}).select("sensorid").fetchSync();
+                    if(ids.length > 0) {
+                        for(var i = 0; i!=ids.length; ++i) {
+                            BasicEnv.sensor_store.removeSync(ids[i]);
+                        }
+                        BasicEnv.sensor_grid.refresh();
+                    }
+                    ids = BasicEnv.switch_store.filter({"switch_grid_watched": true}).select("switchid").fetchSync();
+                    if(ids.length > 0) {
+                        for(var i = 0; i!=ids.length; ++i) {
+                            BasicEnv.switch_store.removeSync(ids[i]);
+                        }
+                        BasicEnv.switch_grid.refresh();
+                    }
+                };
+
+                InitEnv();
+                AfterInit();
+
+                on(dom.byId("start_time_img_node"), "click", function(evt) {
+                    WdatePicker({dateFmt:'yyyy/MM/dd HH:mm', lang:'en', el: "start_time_input_node"});
+                });
+
+                on(dom.byId("stop_time_img_node"), "click", function(evt) {
+                    WdatePicker({dateFmt:'yyyy/MM/dd HH:mm', lang:'en', el: "stop_time_input_node"});
+                });
+
+                on(registry.byId("add_sensor_btn_node"), "click", function(evt) {
+                    AddTriggerItemToGrid();
+                });
+
+                on(registry.byId("remove_sensor_btn_node"), "click", function(evt) {
+                    RemoveTriggerItemFromGrid();
+                });
+
+                on(registry.byId("ok_btn_node"), "click", function(evt) {
+                    var new_obj = MakeTrigger();
+                    if(new_obj.sensors.length == 0) {
+                        SetHint("no sensor");
+                    }
+                    else if(new_obj.name.length == 0) {
+                        SetHint("blank name");
+                    }
+                    else {
+                        SetTrigger(new_obj);
+                    }
+                });
+            });
+        });
+</script>
+</body>
+</html>

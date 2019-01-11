@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ title }}</title>
+    <meta http-equiv="content-type" content="text/html" charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+
+    <link rel="stylesheet" href="/v/jslib/dojo/resources/dojo.css">
+    <link rel="stylesheet" href="/v/jslib/dgrid/css/dgrid.css">
+    <link rel="stylesheet" href="/v/jslib/dgrid/css/skins/claro.css">
+    <link rel="stylesheet" href="/v/jslib/dijit/themes/claro/claro.css">
+    <link rel="stylesheet" href="/v/css/app.css">
+    <link rel="stylesheet" href="/{{ app_css_dir }}/dijit_btns.css">
+    <script>
+        var dojoConfig= { parseOnLoad: true, async: true,
+            packages: [
+                {"name": "roundgis", "location": location.pathname.match(/^\//) + "v/js"},
+                {"name": "dgrid", "location": location.pathname.match(/^\//) + "v/jslib/dgrid" },
+                {"name": "dstore", "location": location.pathname.match(/^\//)+"v/jslib/dstore"},
+                {"name": "rgv", "location": location.pathname.match(/^\//) + "{{ app_js_dir }}"}
+            ]
+        };
+    </script>
+    <script>
+        //global env here
+        var BasicEnv = {templatePath: location.pathname.match(/^\//) + "templates",
+                        rgv_template_path: location.pathname.match(/^\//) + "{{ app_template_dir }}",
+             dialog: undefined};
+        BasicEnv.sessionid = "{{ sessionid }}";
+        BasicEnv.lang = "{{ user_lang }}";
+        BasicEnv.curr_location = location.pathname.match(/^\//);
+    </script>
+
+    <script src="/v/jslib/dojo/dojo.js"></script>
+
+    <script type="text/javascript"
+            src="/v/jslib/My9748/WdatePicker.js">
+    </script>
+
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        html,body,#main_window {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+        }
+
+        .field-watched {
+            width: 10%;
+        }
+    </style>
+</head>
+<body class="claro" id="body_node">
+<div id="main_window" class="rgy_kh_font" data-dojo-type="dijit/layout/BorderContainer" data-dojo-props="design:'headline',gutters:false">
+    <div data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'top'">
+        <div>
+            <button data-dojo-type="dijit/form/Button" id="all_btn_node">{{ refresh_label }}</button>
+            <button data-dojo-type="dijit/form/Button" id="remove_btn_node">{{ remove_label }}</button>
+        </div>
+    </div>
+    <div
+         data-dojo-type="dijit/layout/ContentPane"
+         data-dojo-props="region:'center'">
+        <div id="grid_node" style="height:97%;"></div>
+    </div>
+</div>
+<div id="standby"></div>
+<script>
+require(["dojo/parser", "dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-style", "dojo/aspect", "dojo/query", "dojo/_base/declare",
+         "dojo/_base/lang", "dojo/_base/array",
+         "dijit/registry","dijit/Dialog", "dijit/form/Select", "dijit/form/TextBox", "dijit/form/ValidationTextBox",
+         "dijit/form/Textarea", "dijit/form/CheckBox", "dgrid/Editor", "dgrid/Keyboard",
+         "dgrid/extensions/ColumnHider",
+         "dojox/widget/Standby",  "roundgis/rtutils", "roundgis/dojo_utils",
+         "dgrid/OnDemandGrid", "dgrid/Selection","dstore/Memory",
+         "rgv/em_rpc", "rgv/ConfirmDialog",
+         "dojo/ready"],
+        function(parser, on, dom, domc, doms, aspect, query, declare, lang, darray, registry, Dialog, Select, TextBox, ValidationTextBox,
+                 Textarea, CheckBox, Editor, Keyboard, ColumnHider, Standby,
+                 rtutils, dojo_utils, Grid,  Selection, Memory,
+                 em_rpc, ConfirmDialog,
+                 ready) {
+            ready(function() {
+                var initEnv = function() {
+                    BasicEnv.standby = new Standby({target:"main_window"});
+                    BasicEnv.store = new Memory({idProperty: "id"});
+                    document.body.appendChild(BasicEnv.standby.domNode);
+                    BasicEnv.standby.startup();
+
+                    BasicEnv.column_tbl = {
+                            "eng": [
+                                {field: "watched", autoSave: true, unhidable: true,
+                                    label: " ",
+                                    editor: "checkbox"},
+                                {field: "local_start_time", label: "Start Date"},
+                                {field: "local_stop_time", label: "Stop Date"},
+                                {field: "hh_mm", label: "Time"},
+                                {field: "working_seconds", label: "Working Duration"},
+                                {field: "switch_names", label: "Switches"},
+                                {field: "group_name", label: "Group"},
+                                {field: "local_next_run_time", label: "Next Schedule Time"},
+                                {field: "timezone", label: "Timezone"}
+                            ],
+                            "zho": [
+                                {field: "watched", autoSave: true, unhidable: true,
+                                    label: " ",
+                                    editor: "checkbox"},
+                                {field: "local_start_time", label: "开始"},
+                                {field: "local_stop_time", label: "结束"},
+                                {field: "hh_mm", label: "时间"},
+                                {field: "working_seconds", label: "工作时长"},
+                                {field: "switch_names", label: "开关"},
+                                {field: "group_name", label: "组"},
+                                {field: "local_next_run_time", label: "下次排程"},
+                                {field: "timezone", label: "时区"}
+                            ]
+                        };
+
+                    BasicEnv.refresh_confirm_dialog = new ConfirmDialog({
+                                                         onExecute: function() {
+                                                             loadData(undefined);
+                                                         },
+                                                         onCancel: function() {}
+                                                        });
+                    BasicEnv.refresh_confirm_dialog.startup();
+                    BasicEnv.dialog = new Dialog();
+                    BasicEnv.dialog.startup();
+                };
+
+                var initGrid = function() {
+                    BasicEnv.grid = new declare([Grid, Selection, Keyboard, ColumnHider, Editor])(
+                        {
+                            columns: rtutils.GetLangField(BasicEnv.column_tbl, BasicEnv.lang),
+                            selectionMode: "none",
+                            cellNavigation: true,
+                            collection: BasicEnv.store,
+                            allowSelectAll: false,
+                            minRowsPerPage: 200}, "grid_node");
+                    BasicEnv.grid.startup();
+                    aspect.after(BasicEnv.grid, "renderRow", function(row, args) {
+                        return renderGridRow(row, args);
+                    });
+                };
+
+                var renderGridRow = function(row, args) {
+                    query(".field-local_start_time", row).forEach(function(node) {
+                        node.innerHTML = args[0].local_start_time.split("-").join("/");
+                    });
+
+                    query(".field-local_stop_time", row).forEach(function(node) {
+                        node.innerHTML = args[0].local_stop_time.split("-").join("/");
+                    });
+
+                    query(".field-hh_mm", row).forEach(function(node) {
+                        node.innerHTML = rtutils.seconds2hhmm(args[0].hh_mm);
+                    });
+
+                    query(".field-switch_names", row).forEach(function(node) {
+                        var switch_name = "";
+                        for(var i = 0; i!=args[0].switch_names.length; ++i) {
+                            switch_name += args[0].switch_names[i]+",";
+                        }
+                        if(switch_name.length > 0) {
+                            node.innerHTML = switch_name.substr(0, switch_name.length-1);
+                        }
+                        else {
+                            node.innerHTML = "";
+                        }
+                    });
+
+                    query(".field-working_seconds", row).forEach(function(node) {
+                        node.innerHTML = rtutils.seconds2hhmmss(args[0].working_seconds);
+                    });
+
+                    return row;
+                };
+
+                var Schedule2GridItem = function(schedule_obj) {
+                    return {
+                            "watched": false,
+                            "id": schedule_obj.id,
+                            "timezone": schedule_obj.timezone,
+                            "local_start_time": schedule_obj.local_start_time,
+                            "local_stop_time": schedule_obj.local_stop_time,
+                            "local_next_run_time": schedule_obj.local_next_run_time,
+                            "hour": schedule_obj.hour,
+                            "minute": schedule_obj.minute,
+                            "hh_mm": (schedule_obj.hour*3600+schedule_obj.minute*60),
+                            "working_seconds": schedule_obj.working_seconds,
+                            "switchids": schedule_obj.switchids,
+                            "switch_names": schedule_obj.switch_names,
+                            "groupid": schedule_obj.groupid,
+                            "group_name": schedule_obj.group_name};
+                };
+
+                var loadData = function(ownerid) {
+                    BasicEnv.standby.show();
+                    var para = {"is_all": (ownerid===undefined)?true:false};
+                    var deferobj = rtutils.Rpc2Deferred(em_rpc.GetUserSchedules(BasicEnv.sessionid, para));
+                    return deferobj.then(function(result) {
+                                BasicEnv.standby.hide();
+                                var dataset = darray.map(result, function(item) {
+                                    return Schedule2GridItem(item);
+                                });
+                                BasicEnv.store.setData(dataset);
+                                BasicEnv.grid.refresh();
+                            }, function(err) {
+                                BasicEnv.standby.hide();
+                                console.log(err);
+                            });
+                };
+
+                var RemoveData = function() {
+                    var scheduleids = BasicEnv.store.filter({"watched": true}).select("id").fetchSync();
+                    if(scheduleids.length > 0) {
+                        var para = {"scheduleids": scheduleids};
+                        BasicEnv.standby.show();
+                        var d_obj = rtutils.Rpc2Deferred(em_rpc.RemoveSchedule(BasicEnv.sessionid, para));
+                        return d_obj.then(
+                                function(result) {
+                                    BasicEnv.standby.hide();
+                                    for(var i = 0; i!=scheduleids.length; ++i) {
+                                        BasicEnv.store.removeSync(scheduleids[i]);
+                                    }
+                                    BasicEnv.grid.refresh();
+                                },
+                                function(err) {
+                                    BasicEnv.standby.hide();
+                                    console.log(err);
+                                }
+                        );
+                    }
+                };
+
+                initEnv();
+                initGrid();
+
+                on(registry.byId("all_btn_node"), "click", function() {
+                    loadData(undefined);
+                });
+
+                on(registry.byId("remove_btn_node"), "click", function() {
+                    RemoveData();
+                });
+            });
+        });
+</script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+.field-watched {
+    width: 4em;
+}
+
+.field-id {
+    text-align: center;
+    width: 10%;
+}
+
+.field-url {
+    text-align: center;
+}
+
+.field-name {
+    text-align: center;
+    font-family: "Khmer UI";
+}
+
+.field-proto_no {
+    text-align: center;
+}

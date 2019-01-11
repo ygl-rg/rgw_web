@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ title }}</title>
+    <meta http-equiv="content-type" content="text/html" charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+
+    <link rel="stylesheet" href="/v/jslib/dojo/resources/dojo.css">
+    <link rel="stylesheet" href="/v/jslib/dgrid/css/dgrid.css">
+    <link rel="stylesheet" href="/v/jslib/dgrid/css/skins/claro.css">
+    <link rel="stylesheet" href="/v/jslib/dijit/themes/claro/claro.css">
+    <link rel="stylesheet" href="/{{ app_css_dir }}/dgrid_valve_adm_cols.css">
+    <script>
+        var dojoConfig= { parseOnLoad: true, async: true,
+            packages: [
+                {"name": "roundgis", "location": location.pathname.match(/^\//) + "v/js"},
+                {"name": "dgrid", "location": location.pathname.match(/^\//) + "v/jslib/dgrid" },
+                {"name": "dstore", "location": location.pathname.match(/^\//)+"v/jslib/dstore"},
+                {"name": "rgv", "location": location.pathname.match(/^\//) + "{{ app_js_dir }}"}
+            ]
+        };
+    </script>
+    <script>
+        //global env here
+        var BasicEnv = {templatePath: location.pathname.match(/^\//) + "templates",
+                        rgv_template_path: location.pathname.match(/^\//) + "{{ app_template_dir }}",
+             dialog: undefined};
+        BasicEnv.sessionid = "{{ sessionid }}";
+        BasicEnv.curr_location = location.pathname.match(/^\//);
+        BasicEnv.edit_switch_url = "{{ edit_switch_url }}";
+    </script>
+
+    <script src="/v/jslib/dojo/dojo.js"></script>
+
+    <script type="text/javascript"
+            src="/v/jslib/My9748/WdatePicker.js">
+    </script>
+
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        html,body,#mainwindow {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+        }
+    </style>
+</head>
+<body class="claro" id="body_node">
+<div id="mainwindow" data-dojo-type="dijit/layout/BorderContainer" data-dojo-props="design:'headline',gutters:false">
+    <div data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'top'">
+        <div>
+            <input data-dojo-type="dijit/form/TextBox" data-dojo-props="trim:true,prpercase:true"
+               type="text" id="search_input_node" required="true"
+               style="width: 12em;"/>
+            <input data-dojo-type="dijit/form/TextBox" data-dojo-props="trim:true,prpercase:true"
+               type="text" id="search_input2_node" required="true"
+               style="width: 6em;"/>
+            <select data-dojo-type="dijit/form/Select" id="search_type_node">
+                    <option value="ownerid" selected="selected">owner id|设备ID</option>
+                    <option value="name">name|名字</option>
+            </select>
+            <button data-dojo-type="dijit/form/Button" id="search_btn_node">search|搜索</button>
+            <input id="valve_checkbox_node" data-dojo-type="dijit/form/CheckBox" />
+            <span id="search_count_node"></span>
+            <button data-dojo-type="dijit/form/Button" id="edit_btn_node">add/edit switch|增加/修改开关</button>
+            <button data-dojo-type="dijit/form/Button" id="remove_btn_node">remove switch|删除开关</button>
+        </div>
+    </div>
+    <div
+         data-dojo-type="dijit/layout/ContentPane"
+         data-dojo-props="region:'center'">
+        <div id="grid_node" style="height:97%;"></div>
+    </div>
+</div>
+<div id="standby"></div>
+
+<script>
+require(["dojo/parser", "dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-style", "dojo/aspect", "dojo/query", "dojo/_base/declare",
+         "dojo/_base/lang", "dojo/_base/array",
+         "dijit/registry","dijit/Dialog", "dijit/form/Select", "dijit/form/TextBox", "dijit/form/ValidationTextBox",
+         "dijit/form/Textarea", "dijit/form/CheckBox", "dgrid/Editor", "dgrid/Keyboard",
+         "dgrid/extensions/ColumnHider",
+         "dojox/widget/Standby",  "roundgis/rtutils", "roundgis/dojo_utils",
+         "dgrid/OnDemandGrid", "dgrid/Selection","dstore/Memory",
+         "rgv/switch_adm_rpc", "rgv/ConfirmDialog",
+         "dojo/ready"],
+        function(parser, on, dom, domc, doms, aspect, query, declare, lang, darray, registry, Dialog, Select, TextBox, ValidationTextBox,
+                 Textarea, CheckBox, Editor, Keyboard, ColumnHider, Standby,
+                 rtutils, dojo_utils, Grid,  Selection, Memory,
+                 switch_adm_rpc, ConfirmDialog,
+                 ready) {
+            ready(function() {
+                var initEnv = function() {
+                    BasicEnv.dialog = new Dialog();
+                    BasicEnv.dialog.startup();
+                    BasicEnv.standby = new Standby({target:"mainwindow"});
+                    BasicEnv.store = new Memory({idProperty: "id"});
+                    document.body.appendChild(BasicEnv.standby.domNode);
+                    BasicEnv.standby.startup();
+                    BasicEnv.columns = [
+                            {label: " ",
+                                field: "watched",
+                                autoSave: true,
+                                unhidable: true,
+                                editor: "checkbox"
+                                },
+                            {field: "ownerid", label: "RGGW", unhidable: true},
+                            {field: "nid", label: "Offset|偏移量"},
+                            {field: "name", label: "Name|名字"},
+                            {field: "on_val", label: "On Val|ON值"},
+                            {field: "status", label: "Status|状态"},
+                            {field: "remark", label: "Remark|备注", hidden: true}
+                    ];
+                    BasicEnv.search_input2_node = registry.byId("search_input2_node");
+                    doms.set(BasicEnv.search_input2_node.domNode, "display", "none");
+                    BasicEnv.search_input_node = registry.byId("search_input_node");
+                    BasicEnv.valve_checkbox_node = registry.byId("valve_checkbox_node");
+                };
+
+                var initGrid = function() {
+                    BasicEnv.grid = new declare([Grid, Selection, Keyboard, ColumnHider, Editor])({columns: BasicEnv.columns,
+                        selectionMode: "none",
+                        cellNavigation: true,
+                        collection: BasicEnv.store,
+                        allowSelectAll: false,
+                        minRowsPerPage: 200}, "grid_node");
+                    BasicEnv.grid.startup();
+                    aspect.after(BasicEnv.grid, "renderRow", function(row, args) {
+                        return renderGridRow(row, args);
+                    });
+                };
+
+                var renderGridRow = function(row, args) {
+                    query(".field-status", row).forEach(function(node) {
+                        SetStatusCell(args[0], node);
+                    });
+                    return row;
+                };
+
+                var SetStatusCell = function(griditem, cellnode) {
+                    cellnode.innerHTML = griditem.status || "OFFLINE";
+                };
+
+                var switch2griditem = function(switch_tbl) {
+                    return {"watched": false,
+                            "id": switch_tbl.id,
+                            "name": switch_tbl.name || "",
+                            "ownerid": switch_tbl.ownerid || "",
+                            "nid": switch_tbl.nid,
+                            "status": switch_tbl.status,
+                            "remark": switch_tbl.remark || "",
+                            "on_val": switch_tbl.on_val};
+                };
+
+                var searchData = function(searchinfo) {
+                    BasicEnv.standby.show();
+                    BasicEnv.valve_checkbox_node.set("checked", false);
+                    var deferobj = rtutils.Rpc2Deferred(switch_adm_rpc.SearchSwitch(BasicEnv.sessionid, searchinfo));
+                    return deferobj.then(function(result) {
+                                BasicEnv.standby.hide();
+                                var dataset = darray.map(result, function(item) {
+                                    return switch2griditem(item);
+                                });
+                                BasicEnv.store.setData(dataset);
+                                BasicEnv.grid.refresh();
+                            }, function(err) {
+                                BasicEnv.standby.hide();
+                                console.log(err);
+                            });
+                };
+
+                var selectAll = function(is_select_all) {
+                    BasicEnv.store.forEach(function(tracker) {
+                       tracker.watched = is_select_all;
+                    });
+                    BasicEnv.grid.refresh();
+                };
+
+                initEnv();
+                initGrid();
+
+                on(BasicEnv.search_input_node, "click", function(evt) {
+                    var search_type = registry.byId("search_type_node").get("value");
+                    if(search_type == "expiry") {
+                        WdatePicker({dateFmt:'yyyy-MM-dd', lang:'en'});
+                    }
+                });
+
+                on(BasicEnv.search_input2_node, "click", function(evt) {
+                    var search_type = registry.byId("search_type_node").get("value");
+                    if(search_type == "expiry") {
+                        WdatePicker({dateFmt:'yyyy-MM-dd', lang:'en'});
+                    }
+                });
+
+                on(registry.byId("search_type_node"), "change", function(evt) {
+                    BasicEnv.search_input_node.set("value", "");
+                    BasicEnv.search_input2_node.set("value", "");
+                });
+
+                on(BasicEnv.valve_checkbox_node, "change", function(evt) {
+                    selectAll(evt);
+                });
+
+                on(registry.byId("edit_btn_node"), "click", function() {
+                    var switchids = BasicEnv.store.filter({"watched": true}).select("id").fetchSync();
+                    if(switchids.length == 0) {
+                        window.open(BasicEnv.curr_location+BasicEnv.edit_switch_url+"?edit_mode=add");
+                    }
+                    else {
+                        window.open(BasicEnv.curr_location+BasicEnv.edit_switch_url+"?edit_mode=edit&switchid="+switchids[0], "edit_switch");
+                    }
+                });
+
+                on(registry.byId("remove_btn_node"), "click", function() {
+                    var ids = BasicEnv.store.filter({"watched": true}).select("id").fetchSync();
+                    if(ids.length == 0) {
+                        alert("select a switch first");
+                    }
+                    else {
+                        BasicEnv.standby.show();
+                        rtutils.Rpc2Deferred(switch_adm_rpc.RemoveSwitch(BasicEnv.sessionid, ids)).then(
+                                function(result) {
+                                    BasicEnv.standby.hide();
+                                    for(var i = 0; i!=ids.length; ++i) {
+                                        BasicEnv.store.removeSync(ids[i]);
+                                    }
+                                    BasicEnv.grid.refresh();
+                                },
+                                function(err) {
+                                    BasicEnv.standby.hide();
+                                    console.log(err);
+                                }
+                        );
+                    }
+                });
+
+                on(registry.byId("search_btn_node"), "click", function(evt) {
+                    var search_doc = {"name": registry.byId("search_type_node").get("value")};
+                    search_doc.val = registry.byId("search_input_node").get("value");
+                    searchData(search_doc);
+                });
+            });
+        });
+</script>
+</body>
+</html>

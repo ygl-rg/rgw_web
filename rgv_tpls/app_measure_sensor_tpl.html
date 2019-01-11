@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ title }}</title>
+    <meta http-equiv="content-type" content="text/html" charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+
+    <link rel="stylesheet" href="/v/jslib/dijit/themes/claro/claro.css">
+    <link rel="stylesheet" href="/v/jslib/dgrid/css/dgrid.css">
+    <link rel="stylesheet" href="/v/jslib/dgrid/css/skins/claro.css">
+    <link rel="stylesheet" href="/v/jslib/dojo/resources/dojo.css">
+    <link rel="stylesheet" href="/v/css/app.css">
+
+    <script src="/v/js/origin_patch.js"></script>
+    <script type="text/javascript"
+            src="/v/jslib/My9748/WdatePicker.js">
+    </script>
+    <script>
+        var dojoConfig = {
+            parseOnLoad: true, async: true,
+            packages: [
+                {"name": "roundgis", "location": location.pathname.match(/^\//) + "js"},
+                {"name": "dgrid", "location": location.pathname.match(/^\//) + "jslib/dgrid" },
+                {"name": "dstore", "location": location.pathname.match(/^\//)+"jslib/dstore"},
+                {"name": "rgv", "location": location.pathname.match(/^\//) + "{{ app_js_dir }}"}
+            ]
+        };
+    </script>
+    <script>
+        //global env here
+        var BasicEnv = {
+            curr_location: location.pathname.match(/^\//),
+            templatePath: location.pathname.match(/^\//) + "templates",
+            rgv_template_path: location.pathname.match(/^\//) + "{{ app_template_dir }}",
+            imgpath: location.pathname.match(/^\//) + "v/imgs"
+        };
+        BasicEnv.searchinput = {};
+        BasicEnv.sessionid = "{{ sessionid }}";
+        BasicEnv.userid = "{{ userid }}";
+        BasicEnv.sensorid = "{{ sensorid }}";
+    </script>
+
+    <script src="/v/jslib/dojo/dojo.js"></script>
+
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body, #main_ui_node {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+        }
+
+        .field-watched {
+            width: 2em;
+        }
+
+        .field-sensor_val {
+            text-align: center;
+        }
+
+        .field-measured_val {
+            text-align: center;
+        }
+    </style>
+</head>
+<body class="claro">
+
+<div id="main_ui_node" data-dojo-type="dijit/layout/ContentPane">
+    <div id="data_grid_node" style="height: 50%;"></div>
+    <div style="height: 10px;"></div>
+    <div style="width: 25%; margin: 0 auto;">
+        <div>
+            <label>sensor value|传感器值: </label>
+            <span style="width: 4px; display: inline-block;"></span>
+            <input data-dojo-type="dijit/form/TextBox"
+                       data-dojo-props="trim:true,prpercase:true"
+                       id="sensor_val_input_node"
+                       type="text" style="width: 6em;"/>
+        </div>
+        <div>
+            <label>measured value|测量值: </label>
+            <span style="width: 4px; display: inline-block;"></span>
+            <input data-dojo-type="dijit/form/TextBox"
+                       data-dojo-props="trim:true,prpercase:true"
+                       id="measured_val_input_node"
+                       type="text" style="width: 6em;"/>
+        </div>
+
+    </div>
+    <span style="height: 10px; display: block;"></span>
+    <div style="width: 240px; margin: 0 auto;">
+        <button data-dojo-type="dijit/form/Button"
+                id="add_btn_node">add|增加</button>
+        <button data-dojo-type="dijit/form/Button"
+                id="remove_btn_node">remove|删除</button>
+        <button data-dojo-type="dijit/form/Button"
+                id="get_sensor_val_btn_node">get sensor value|获取传感器读数</button>
+        <button data-dojo-type="dijit/form/Button"
+                id="compute_btn_node">compute|计算</button>
+    </div>
+    <span style="height: 10px; display: block;"></span>
+    <div style="width: 30%; margin: 0 auto;">
+        <table>
+            <tr>
+                <td>A:</td>
+                <td><label id="A_node"></label></td>
+            </tr>
+            <tr>
+                <td>B:</td>
+                <td><label id="B_node"></label></td>
+            </tr>
+        </table>
+    </div>
+    <span style="height: 10px; display: block;"></span>
+    <div style="width: 30%; margin: 0 auto;" id="hint_node"></div>
+</div>
+<div id="standby"></div>
+
+<script>
+    require(["dojo/parser", "dojo/on", "dojo/dom", "dojo/dom-construct", "dojo/aspect", "dojo/query", "dojo/_base/declare", "dojo/_base/lang", "dojo/_base/array",
+                "dijit/registry", "dijit/form/Textarea", "dijit/form/CheckBox", "dijit/form/Select", "dijit/layout/TabContainer", "dijit/layout/ContentPane",
+                "dijit/form/Button", "dgrid/Editor", "dgrid/Keyboard",
+                "dojox/widget/Standby", "roundgis/rtutils",
+                "rgv/sensor_measurement_rpc", "rgv/sensor_adm_rpc",
+                "dgrid/OnDemandGrid", "dgrid/CellSelection", "dstore/Memory", "dojox/collections/Dictionary",
+                "dojo/ready"],
+            function (parser, on, dom, domc, aspect, query, declare, lang, darray,
+                      registry, Textarea, CheckBox, Select, TabContainer, ContentPane,
+                      Button, Editor, Keyboard, Standby,
+                      rtutils,
+                      measurement_rpc, sensor_adm_rpc, Grid,
+                      Selection, Memory, Dictionary,
+                      ready) {
+                ready(function () {
+                    var InitEnv = function () {
+                        BasicEnv.standby = new Standby({target: "main_ui_node"});
+                        BasicEnv.store = new Memory({idProperty: "id"});
+                        document.body.appendChild(BasicEnv.standby.domNode);
+                        BasicEnv.standby.startup();
+                        BasicEnv.columns = [
+                            {
+                                label: " ",
+                                field: "watched",
+                                autoSave: true,
+                                editor: "checkbox"
+                            },
+                            {field: "sensor_val", label: "Sensor"},
+                            {field: "measured_val", label: "Measured"}
+                        ];
+                        BasicEnv.id_count = 1;
+                    };
+                    BasicEnv.hint_node = dom.byId("hint_node");
+
+                    var InitGrid = function () {
+                        BasicEnv.grid = new declare([Grid, Selection, Keyboard, Editor])({
+                            columns: BasicEnv.columns,
+                            selectionMode: "single",
+                            cellNavigation: true,
+                            collection: BasicEnv.store,
+                            minRowsPerPage: 200
+                        }, "data_grid_node");
+                        BasicEnv.grid.startup();
+                    };
+
+                    InitEnv();
+                    InitGrid();
+
+                    on(registry.byId("add_btn_node"), "click", function(evt) {
+                        var sensor_val = parseFloat(registry.byId("sensor_val_input_node").get("value"));
+                        if(!rtutils.IsValidNumber(sensor_val)) {
+                            BasicEnv.hint_node.innerHTML = "invalid sensor value";
+                            return false;
+                        }
+                        var measured_val = parseFloat(registry.byId("measured_val_input_node").get("value"));
+                        if(!rtutils.IsValidNumber(measured_val)) {
+                            BasicEnv.hint_node.innerHTML = "invalid measured value";
+                            return false;
+                        }
+                        var rec = {
+                            "id": BasicEnv.id_count,
+                            "sensor_val": sensor_val,
+                            "measured_val": measured_val
+                        };
+                        BasicEnv.store.putSync(rec);
+                        BasicEnv.id_count += 1;
+                        BasicEnv.grid.refresh();
+                    });
+
+                    on(registry.byId("remove_btn_node"), "click", function(evt) {
+                        var ids = BasicEnv.store.filter({"watched": true}).select("id").fetchSync();
+                        if(ids.length > 0) {
+                            for(var i = 0; i!= ids.length; ++i) {
+                                BasicEnv.store.removeSync(ids[i]);
+                            }
+                            BasicEnv.grid.refresh();
+                        }
+                    });
+
+                    on(registry.byId("compute_btn_node"), "click", function(evt) {
+                        var rows = BasicEnv.store.fetchSync();
+                        var arg = {
+                            "xs": darray.map(rows, function(row) {
+                                return row.sensor_val;
+                            }),
+                            "ys": darray.map(rows, function(row) {
+                                return row.measured_val;
+                            })
+                        };
+                        BasicEnv.hint_node.innerHTML = "";
+                        BasicEnv.standby.show();
+                        rtutils.Rpc2Deferred(measurement_rpc.ModelingMeasurement(BasicEnv.sessionid, arg)).then(
+                                function(result) {
+                                    BasicEnv.standby.hide();
+                                    dom.byId("A_node").innerHTML = result[0].toFixed(4);
+                                    dom.byId("B_node").innerHTML = result[1].toFixed(4);
+                                },
+                                function(err) {
+                                    BasicEnv.standby.hide();
+                                    console.log(err);
+                                    BasicEnv.hint_node.innerHTML = err.declaredType;
+                                }
+                        );
+                    });
+
+                    on(registry.byId("get_sensor_val_btn_node"), "click", function(evt) {
+                        BasicEnv.hint_node.innerHTML = "";
+                        BasicEnv.standby.show();
+                        rtutils.Rpc2Deferred(sensor_adm_rpc.GetSensor(BasicEnv.sessionid, BasicEnv.sensorid)).then(
+                                function(result) {
+                                    BasicEnv.standby.hide();
+                                    if(rtutils.IsValidNumber(result.val)) {
+                                        registry.byId("sensor_val_input_node").set("value", result.val.toFixed(4));
+                                    }
+                                    else {
+                                        registry.byId("sensor_val_input_node").set("value", "");
+                                    }
+                                },
+                                function(err) {
+                                    BasicEnv.standby.hide();
+                                    console.log(err);
+                                    BasicEnv.hint_node.innerHTML = err.declaredType;
+                                }
+                        );
+                    });
+                });
+            });
+</script>
+</body>
+</html>

@@ -1,0 +1,112 @@
+.claro .dijit_tab_icon_map {
+    background-image: url("/imgs/tab_icon_map.png");
+    background-repeat: no-repeat;
+    width: 25px;
+    height: 25px;
+}
+
+.claro .dijit_tab_icon_car_list {
+    background-image: url("/imgs/tab_icon_car_list.png");
+    background-repeat: no-repeat;
+    width: 25px;
+    height: 25px;
+}
+
+.claro .dijit_tab_icon_car_control {
+    background-image: url("/imgs/tab_icon_car_control.png");
+    background-repeat: no-repeat;
+    width: 25px;
+    height: 25px;
+}
+
+.claro .dijit_tab_icon_tracker_event_log {
+    background-image: url("/imgs/tab_trace_search.png");
+    background-repeat: no-repeat;
+    width: 25px;
+    height: 25px;
+}
+
+.claro .dijit_tab_icon_search {
+    background-image: url("/imgs/tab_icon_search.png");
+    background-repeat: no-repeat;
+    width: 25px;
+    height: 25px;
+}
+
+.claro .dijit_tab_icon_image_event_search {
+    background-image: url("/imgs/tab_image_event_search.png");
+    background-repeat: no-repeat;
+    width: 25px;
+    height: 25px;
+}
+
+
+.claro .dijit_tab_icon_over_speed {
+    background-image: url("/imgs/tab_icon_over_speed.png");
+    background-repeat: no-repeat;
+    width: 25px;
+    height: 25px;
+}
+
+.claro .dijit_tab_icon_over_parking {
+    background-image: url("/imgs/tab_icon_over_parking.png");
+    background-repeat: no-repeat;
+    width: 25px;
+    height: 25px;
+}
+
+.claro .dijit_tab_icon_trace_play {
+    background-image: url("/imgs/tab_icon_trace_play.png");
+    background-repeat: no-repeat;
+    width: 25px;
+    height: 25px;
+}
+
+.claro .dijit_tab_icon_trace_search {
+    background-image: url("/imgs/tab_icon_trace_search.png");
+    background-repeat: no-repeat;
+    width: 25px;
+    height: 25px;
+}
+
+.claro .dijit_tab_icon_user_setting {
+    background-image: url("/imgs/tab_icon_user_setting.png");
+    background-repeat: no-repeat;
+    width: 25px;
+    height: 25px;
+}
+
+.claro .dijit_tab_icon_spot {
+    background-image: url("/imgs/tab_icon_spot.png");
+    background-repeat: no-repeat;
+    width: 25px;
+    height: 25px;
+}
+
+.claro .dijit_tab_icon_shooting {
+    background-image: url("/imgs/tab_icon_shooting.png");
+    background-repeat: no-repeat;
+    width: 25px;
+    height: 25px;
+}
+
+.claro .dijit_tab_icon_shooting_conf {
+    background-image: url("/imgs/tab_icon_shooting_conf.png");
+    background-repeat: no-repeat;
+    width: 25px;
+    height: 25px;
+}
+
+.claro .dijit_tab_icon_offline_grid {
+    background-image: url("/imgs/red_car0.png");
+    background-repeat: no-repeat;
+    width: 16px;
+    height: 25px;
+}
+
+.claro .dijit_tab_icon_parking_grid {
+    background-image: url("/imgs/green_car0.png");
+    background-repeat: no-repeat;
+    width: 16px;
+    height: 25px;
+}

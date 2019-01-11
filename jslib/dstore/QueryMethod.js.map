@@ -1,0 +1,8 @@
+{
+"version":3,
+"file":"QueryMethod.js",
+"lineCount":2,
+"mappings":"A;AAAAA,MAAA,CAAO,oBAAP,CAA6B,EAA7B,CAAiC,QAAS,EAAG,CAiB5C,MAAOC,SAAoB,CAAuBC,CAAvB,CAA+B,CAAA,IAerDC,EAAOD,CAAAC,KAf8C,CAgBxDC,EAAqBF,CAAAE,mBAhBmC,CAiBxDC,EAAaH,CAAAG,WAjB2C,CAkBxDC,EAAwBJ,CAAAK,eAEzB,OAAO,SAAS,EAAG,CAAA,IAMdC,EAAoBC,KAAAC,UAAAC,MAAAC,KAAA,CAA2BC,SAA3B,CANN,CAOjBC,EAAsBV,CAAA,CACnBA,CAAAW,MAAA,CAAyB,IAAzB,CAA+BP,CAA/B,CADmB,CAEnBA,CATc,CAUjBQ,EAAW,CACVb,KAAMA,CADI,CAEVU,UAAWL,CAFD,CAGVM,oBAAqBA,CAHX,CAVM,CAejBP,EAAiB,IAAAU,mBAAA,CAAwBd,CAAxB,CAAjBI,EAAkDD,CAE/CC,EAAJ,GAGCS,CAAAE,QAHD,CAGoBX,CAAAQ,MAAA,CAAqB,IAArB,CAA2BD,CAA3B,CAHpB,CAMIK,EAAAA,CAAgB,IAAAC,qBAAA,CAA0B,CAC7CC,SAAU,IAAAA,SAAAC,OAAA,CAAqBN,CAArB,CADmC,CAA1B,CAIpB,OAAOX,EAAA,CAAaA,CAAAO,KAAA,CAAgB,IAAhB,CAAsBO,CAAtB,CAAqCH,CAArC,CAAb,CAA8DG,CA3BnD,CApBsC,CAjBd,CAA7C;",
+"sources":["QueryMethod.js.uncompressed.js"],
+"names":["define","QueryMethod","kwArgs","type","normalizeArguments","applyQuery","defaultQuerierFactory","querierFactory","originalArguments","Array","prototype","slice","call","arguments","normalizedArguments","apply","logEntry","_getQuerierFactory","querier","newCollection","_createSubCollection","queryLog","concat"]
+}

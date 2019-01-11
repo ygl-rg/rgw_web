@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ title }}</title>
+    <meta http-equiv="content-type" content="text/html" charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+
+    <link rel="stylesheet" href="/v/jslib/dijit/themes/claro/claro.css">
+    <link rel="stylesheet" href="/v/jslib/dgrid/css/dgrid.css">
+    <link rel="stylesheet" href="/v/jslib/dgrid/css/skins/claro.css">
+    <link rel="stylesheet" href="/v/jslib/dojo/resources/dojo.css">
+    <link rel="stylesheet" href="/v/css/app.css">
+    <link rel="stylesheet" href="/{{ app_css_dir }}/dijit_btns.css">
+    <link rel="stylesheet" href="/{{ app_css_dir }}/dijit_tab_icons.css">
+
+    <script src="/js/origin_patch.js"></script>
+    <script>
+        var dojoConfig = {
+            parseOnLoad: true, async: true,
+            packages: [
+                {"name": "roundgis", "location": location.pathname.match(/^\//) + "v/js"},
+                {"name": "dgrid", "location": location.pathname.match(/^\//) + "v/jslib/dgrid" },
+                {"name": "dstore", "location": location.pathname.match(/^\//)+"v/jslib/dstore"},
+                {"name": "rgv", "location": location.pathname.match(/^\//) + "{{ app_js_dir }}"}
+            ]
+        };
+    </script>
+    <script>
+        //global env here
+        var BasicEnv = {
+            curr_location: location.pathname.match(/^\//),
+            templatePath: location.pathname.match(/^\//) + "templates",
+            rgy_template_path: location.pathname.match(/^\//) + "{{ app_template_dir }}",
+            imgpath: location.pathname.match(/^\//) + "v/imgs"
+        };
+        BasicEnv.searchinput = {};
+        BasicEnv.sessionid = "{{ sessionid }}";
+        BasicEnv.userid = "{{ userid }}";
+    </script>
+
+    <script src="/v/jslib/dojo/dojo.js"></script>
+
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body, #main_ui_node {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+        }
+
+        .field-watched {
+            width: 2em;
+        }
+
+        .field-id {
+            text-align: center;
+        }
+
+        .field-name {
+            text-align: center;
+        }
+    </style>
+</head>
+<body class="claro">
+
+<div id="main_ui_node" data-dojo-type="dijit/layout/ContentPane">
+    <div>
+        <input data-dojo-type="dijit/form/TextBox" data-dojo-props="trim:true,prpercase:true"
+               type="text" id="search_input_node" required="true"
+               style="width: 6em;"/>
+        <select data-dojo-type="dijit/form/Select" id="search_type_node">
+                    <option value="deviceid" selected="selected">id</option>
+                    <option value="name">name|名字</option>
+                    <option value="group_name">group name|组名</option>
+        </select>
+        <button data-dojo-type="dijit/form/Button" id="search_btn_node">search|搜索</button>
+    </div>
+    <div style="height: 4px;"></div>
+    <div id="device_grid_node" style="height: 55%;"></div>
+    <div style="height: 10px;"></div>
+    <div>
+        <label>start addr: </label>
+        <span style="width: 4px; display: inline-block;"></span>
+        <input data-dojo-type="dijit/form/TextBox"
+                       data-dojo-props="trim:true,prpercase:true"
+                       id="start_addr_input_node"
+                       type="text" style="width: 3em;"/>
+        <span style="width: 10px; display: inline-block;"></span>
+        <label>count: </label>
+        <span style="width: 4px; display: inline-block;"></span>
+        <input data-dojo-type="dijit/form/TextBox"
+                       data-dojo-props="trim:true,prpercase:true"
+                       id="num_input_node"
+                       type="text" style="width: 3em;"/>
+    </div>
+    <span style="height: 32px; display: block;"></span>
+    <div>
+        <label>eeprom data|eeprom 数据: </label>
+        <span style="height: 4px; display: block;"></span>
+        <input data-dojo-type="dijit/form/Textarea" style="width: 100%; height: 4em;"
+               data-dojo-props="trim:true,prpercase:true"
+               id="eeprom_data_input_node"/>
+    </div>
+    <span style="height: 32px; display: block;"></span>
+    <div style="margin: 0 auto; width: 240px;">
+        <button data-dojo-type="dijit/form/Button"
+                            id="set_btn_node">set|设置
+        </button>
+        <span style="width: 10px; display: inline-block;"></span>
+        <button data-dojo-type="dijit/form/Button"
+                            id="get_btn_node">get|获取
+        </button>
+    </div>
+    <div id="hint_node"></div>
+</div>
+<div id="standby"></div>
+
+<script>
+    require(["dojo/parser", "dojo/on", "dojo/dom", "dojo/dom-construct", "dojo/aspect", "dojo/query", "dojo/_base/declare", "dojo/_base/lang", "dojo/_base/array",
+                "dijit/registry", "dijit/form/Textarea", "dijit/form/CheckBox", "dijit/form/Select", "dijit/layout/TabContainer", "dijit/layout/ContentPane",
+                "dijit/form/Button", "dgrid/Editor", "dgrid/Keyboard",
+                "dojox/widget/Standby", "roundgis/rtutils",
+                "rgv/rggw_adm_rpc",
+                "dgrid/OnDemandGrid", "dgrid/CellSelection", "dstore/Memory", "dojox/collections/Dictionary",
+                "dojo/ready"],
+            function (parser, on, dom, domc, aspect, query, declare, lang, darray,
+                      registry, Textarea, CheckBox, Select, TabContainer, ContentPane,
+                      Button, Editor, Keyboard, Standby,
+                      rtutils,
+                      rggw_adm_rpc, Grid,
+                      Selection, Memory, Dictionary,
+                      ready) {
+                ready(function () {
+                    var initEnv = function () {
+                        BasicEnv.standby = new Standby({target: "main_ui_node"});
+                        BasicEnv.store = new Memory({idProperty: "id"});
+                        document.body.appendChild(BasicEnv.standby.domNode);
+                        BasicEnv.standby.startup();
+                        BasicEnv.columns = [
+                            {
+                                label: " ",
+                                field: "watched",
+                                autoSave: true,
+                                editor: "radio"
+                            },
+                            {field: "id", label: "Id"},
+                            {field: "name", label: "Name|名字"}
+                        ];
+                    };
+                    BasicEnv.hint_node = dom.byId("hint_node");
+
+                    var InitGrid = function () {
+                        BasicEnv.grid = new declare([Grid, Selection, Keyboard, Editor])({
+                            columns: BasicEnv.columns,
+                            selectionMode: "single",
+                            cellNavigation: true,
+                            collection: BasicEnv.store,
+                            minRowsPerPage: 200
+                        }, "device_grid_node");
+                        BasicEnv.grid.startup();
+                    };
+
+                    var SetGrid = function (items) {
+                        if (!BasicEnv.grid) {
+                            InitGrid();
+                        }
+                        if (items.length > 0) {
+                            items[0].watched = true;
+                        }
+                        BasicEnv.grid.set("columns", BasicEnv.columns);
+                        BasicEnv.store.setData(items);
+                        BasicEnv.grid.refresh();
+                    };
+
+                    var SearchDevice = function(searchinfo) {
+                        BasicEnv.standby.show();
+                        var deferobj = rtutils.Rpc2Deferred(rggw_adm_rpc.SearchDevice(BasicEnv.sessionid, searchinfo));
+                        return deferobj.then(function(result) {
+                                    BasicEnv.standby.hide();
+                                    for(var i = 0; i!=result.length; ++i) {
+                                        result[i].watched = false;
+                                    }
+                                    SetGrid(result);
+                                }, function(err) {
+                                    BasicEnv.standby.hide();
+                                    console.log(err);
+                                });
+                    };
+
+                    initEnv();
+
+                    on(registry.byId("search_btn_node"), "click", function(evt) {
+                        var search_doc = {"name": registry.byId("search_type_node").get("value")};
+                        search_doc.val = registry.byId("search_input_node").get("value");
+                        SearchDevice(search_doc);
+                    });
+
+                    on(registry.byId("get_btn_node"), "click", function(evt) {
+                        var deviceids = BasicEnv.store.filter({"watched": true}).select("id").fetchSync();
+                        registry.byId("eeprom_data_input_node").set("value", "");
+                        if (deviceids.length > 0) {
+                            var para = {
+                                "start_addr": parseInt(registry.byId("start_addr_input_node").get("value")),
+                                "deviceid": deviceids[0],
+                                "count": parseInt(registry.byId("num_input_node").get("value"))
+                            };
+                            if(rtutils.IsValidNumber(para['count']) && para['count'] >= 1) {
+                                if(rtutils.IsValidNumber(para['start_addr']) && para['start_addr'] >= 0) {
+                                    rtutils.ShowStandby(BasicEnv.standby);
+                                    var d_obj = rtutils.Rpc2Deferred(rggw_adm_rpc.GetEEPROM(BasicEnv.sessionid, para));
+                                    d_obj.then(
+                                        function(result) {
+                                            rtutils.HideStandby(BasicEnv.standby);
+                                            if(result) {
+                                                var ints = result.payload.data;
+                                                registry.byId("eeprom_data_input_node").set("value", ints.join(","));
+                                            }
+                                        },
+
+                                        function(err) {
+                                            rtutils.HideStandby(BasicEnv.standby);
+                                            alert(err.declaredType);
+                                            console.log(err);
+                                        }
+                                    );
+                                }
+                                else {
+                                    alert("start addr >= 0");
+                                }
+                            }
+                            else {
+                                alert("count must >= 1");
+                            }
+
+                        }
+                        else {
+                            alert("choose device first");
+                        }
+                    });
+
+                    on(registry.byId("set_btn_node"), "click", function(evt) {
+                        var deviceids = BasicEnv.store.filter({"watched": true}).select("id").fetchSync();
+                        var temp = registry.byId("eeprom_data_input_node").get("value");
+                        var ints = darray.map(temp.split(','), function(i, idx) {
+                            return parseInt(i);
+                        });
+                        if (deviceids.length > 0) {
+                            var para = {
+                                "start_addr": parseInt(registry.byId("start_addr_input_node").get("value")),
+                                "deviceid": deviceids[0],
+                                "data": ints
+                            };
+                            if(rtutils.IsValidNumber(para['start_addr']) && para['start_addr'] >= 0) {
+
+                                    rtutils.ShowStandby(BasicEnv.standby);
+                                    var d_obj = rtutils.Rpc2Deferred(rggw_adm_rpc.SetEEPROM(BasicEnv.sessionid, para));
+                                    d_obj.then(
+                                        function(result) {
+                                            rtutils.HideStandby(BasicEnv.standby);
+                                            alert(result);
+                                        },
+
+                                        function(err) {
+                                            rtutils.HideStandby(BasicEnv.standby);
+                                            alert(err.declaredType);
+                                            console.log(err);
+                                        }
+                                    );
+                            }
+                            else {
+                                alert("start addr >= 0");
+                            }
+                        }
+                        else {
+                            alert("choose device first");
+                        }
+                    });
+                });
+            });
+</script>
+</body>
+</html>

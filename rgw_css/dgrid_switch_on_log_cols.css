@@ -1,0 +1,16 @@
+.field-id {
+    text-align: center;
+    width: 3em;
+}
+
+.field-val {
+    text-align: center;
+}
+
+.field-start_ts {
+    text-align: center;
+}
+
+.field-stop_ts {
+    text-align: center;
+}

@@ -1,0 +1,33 @@
+.field-watched {
+    width: 8%;
+}
+
+.field-deviceid {
+    text-align: center;
+}
+
+.field-nid {
+    width: 6em;
+    text-align: center;
+}
+
+.field-ownerid {
+    text-align: center;
+}
+
+.field-name {
+    text-align: center;
+    font-family: "Khmer UI";
+}
+
+.field-cts {
+    text-align: center;
+}
+
+.field-uts {
+    text-align: center;
+}
+
+.field-group_name {
+    text-align: center;
+}

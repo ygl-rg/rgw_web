@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ title }}</title>
+    <meta http-equiv="content-type" content="text/html" charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+
+    <link rel="stylesheet" href="/v/jslib/dijit/themes/claro/claro.css">
+    <link rel="stylesheet" href="/v/jslib/dojo/resources/dojo.css">
+    <script>
+        var dojoConfig= { parseOnLoad: true, async: true,
+            packages: [
+                {"name": "roundgis", "location": location.pathname.match(/^\//) + "js"},
+                {"name": "dgrid", "location": location.pathname.match(/^\//) + "jslib/dgrid" },
+                {"name": "rgv", "location": location.pathname.match(/^\//) + "{{ app_js_dir }}"}
+            ]
+        };
+    </script>
+    <script>
+        //global env here
+        var BasicEnv = {templatePath: location.pathname.match(/^\//) + "templates",
+                        rgv_template_path: location.pathname.match(/^\//) + "{{ app_template_dir }}"};
+    </script>
+
+    <script src="/jslib/dojo/dojo.js"></script>
+
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+            background-image: url("/imgs/{{ bkgpng }}");
+            background-size: 100% 100%;
+        }
+
+        #login_node {
+            border: 5px solid #999;
+            width: 280px;
+            padding: 0px;
+            margin: 0px auto;
+            background-color: #F8F8F8;
+            text-align: center;
+        }
+    </style>
+    <title>{{ title }}</title>
+</head>
+<body class="claro">
+    <br><br><br><br>
+        <div data-dojo-type="dijit/form/Form" method="post" encType="multipart/form-data"
+             action="{{ loginurl }}" id="login_node">
+                <label style="color: blue; font-weight: bold">Sys Adm|系统管理</label>
+                <table style="width: 100%; margin-top: 5px;">
+                    <tr>
+                        <td><input data-dojo-type="dijit/form/TextBox" name="userid" id="userid_node"
+                                   data-dojo-props='trim:true,placeHolder:"account"' type="text" style="width:10.5em;"/></td>
+                    </tr>
+                    <tr>
+                        <td><input data-dojo-type="dijit/form/TextBox" name="pwd" id="pwd_node"
+                            data-dojo-props='trim:true,placeHolder:"password"'
+                            type="password" style="width:10.5em;"/></td>
+                    </tr>
+                </table>
+                <div style="margin-top: 0.5em;">
+                    <div>
+                        {% for idx, adm_type_rec in enumerate(adm_types) %}
+                            {% if idx > 0 %}
+                            <div style="margin-top: 0.5em;">
+                            {% else %}
+                            <div>
+                            {% end %}
+                                {% if "checked" in adm_type_rec %}
+                                    <input type="radio" data-dojo-type="dijit/form/RadioButton"
+                                           value="{{ adm_type_rec['value'] }}"
+                                           name="adm_type"
+                                           id="{{ adm_type_rec['value'] }}_radio_node"
+                                           checked />
+                                {% else %}
+                                    <input type="radio" data-dojo-type="dijit/form/RadioButton"
+                                           value="{{ adm_type_rec['value'] }}"
+                                           name="adm_type"
+                                           id="{{ adm_type_rec['value'] }}_radio_node"/>
+                                {% end %}
+                                <label>{{ adm_type_rec['name'] }}</label>
+                            </div>
+                        {% end %}
+                    </div>
+                </div>
+                <div style="margin-top: 0.5em;">
+                    <button data-dojo-type="dijit/form/Button" type="submit">login</button>
+                </div>
+                <div style="color:grey;">
+                    Cookies must be enabled|必须启用Cookies
+                </div>
+                <div>
+                    <label id="hint_node" style="color: red;">{{ hint }}</label>
+                </div>
+                <div>
+                    <br>
+                    for better user experience, we recommend using google chrome browser.
+                    <br>
+                    推荐使用Google Chrome浏览器
+                </div>
+                <div>
+                    <br><br><br>
+                    <label style="font-style: italic;">Proudly powered by RoundGIS Lab</label>
+                </div>
+           </div>
+<script>
+require(["dojo/parser", "dojo/on","dojo/dom",
+    "dijit/registry",  "dojo/ready"],
+        function(parser, on, dom, registry, ready) {
+            ready(function() {
+                on(registry.byId("login_node"), "submit", function(evt) {
+                    if(registry.byId("userid_node").get("value").length == 0 ||
+                       registry.byId("pwd_node").get("value").length == 0) {
+                        evt.preventDefault();
+                        dom.byId("hint_node").innerHTML = "please enter account & password";
+                    }
+                    else {
+                        return true;
+                    }
+                });
+            });
+        });
+</script>
+</body>
+</html>

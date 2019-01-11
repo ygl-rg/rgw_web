@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ title }}</title>
+    <meta http-equiv="content-type" content="text/html" charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <link rel="stylesheet" href="/jslib/dijit/themes/claro/claro.css">
+    <link rel="stylesheet" href="/jslib/dojo/resources/dojo.css">
+    <link rel="stylesheet" href="/jslib/dgrid/css/dgrid.css">
+    <link rel="stylesheet" href="/jslib/dgrid/css/skins/claro.css">
+    <link rel="stylesheet" href="/css/app.css">
+    <script src="/js/origin_patch.js"></script>
+    <script type="text/javascript"
+            src="/jslib/My9748/WdatePicker.js">
+    </script>
+    <script>
+        var dojoConfig = {
+            parseOnLoad: true, async: true,
+            //gfxRenderer: "svg,silverlight,vml",
+            packages: [
+                {"name": "shimmy", "location": location.pathname.match(/^\//) + "jslib/shimmy"},
+                {"name": "roundgis", "location": location.pathname.match(/^\//) + "js"},
+                {"name": "dgrid", "location": location.pathname.match(/^\//) + "jslib/dgrid"},
+                {"name": "dstore", "location": location.pathname.match(/^\//) + "jslib/dstore"},
+                {"name": "rgw", "location": location.pathname.match(/^\//) + "{{ app_js_dir }}"}
+            ]
+        };
+    </script>
+    <script>
+        //global env here
+        var BasicEnv = {
+            lang: "{{ user_lang }}",
+            curr_location: location.pathname.match(/^\//),
+            templatePath: location.pathname.match(/^\//) + "templates",
+            rgw_template_path: location.pathname.match(/^\//) + "{{ app_template_dir }}",
+            imgpath: location.pathname.match(/^\//) + "imgs",
+            standby: undefined,
+            main_grid: undefined
+        };
+        BasicEnv.sessionid = "{{ sessionid }}";
+        BasicEnv.sensors_tbl = {};
+        BasicEnv.sensorids = [];
+        BasicEnv.sensor_names = [];
+        {% for sensorid in sensorids %}
+            BasicEnv.sensorids.push("{{ sensorid }}");
+        {% end %}
+        {% for sensorid in sensorids %}
+            BasicEnv.sensor_names.push("{{ sensors_tbl[sensorid]['name'] }}");
+        {% end %}
+    </script>
+    <script src="/jslib/dojo/dojo.js"></script>
+
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body, #main_ui_node {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: "Khmer UI";
+            font-size: 14px;
+        }
+    </style>
+    <style id="dgrid_style">
+
+    </style>
+</head>
+<body class="claro" id="body_node">
+<div id="main_ui_node">
+    <div style="width: 99%;">
+        <table>
+            <tr>
+                <td>
+                    <input data-dojo-type="dijit/form/TextBox"
+                           data-dojo-props="trim:true, propercase:true, readonly:true"
+                           type="text" required="required"
+                           id="start_time_node" style="width: 8em; " />
+                </td>
+                <td>
+                    <input data-dojo-type="dijit/form/TextBox"
+                           data-dojo-props="trim:true, propercase:true, readonly:true"
+                           type="text"
+                           id="stop_time_node" style="width: 8em; " required="required" />
+                </td>
+                <td>
+                    <select data-dojo-type="dijit/form/Select"
+                        id="mins_interval_select_node">
+                            {% for idx, mins_interval in enumerate(mins_interval_tbls) %}
+                                {% if 'selected' in mins_interval %}
+                                    <option value="{{ mins_interval['value'] }}" selected="selected">{{ mins_interval["label"] }}</option>
+                                {% else %}
+                                    <option value="{{ mins_interval['value'] }}">{{ mins_interval["label"] }}</option>
+                                {% end %}
+                            {% end %}
+                    </select>
+                </td>
+                <td>
+                        <button data-dojo-type="dijit/form/Button"
+                            id="query_btn_node">ok
+                        </button>
+                        <span style="display: inline-block; width: 4px;"></span>
+                        <button data-dojo-type="dijit/form/Button"
+                            id="export_btn_node">export
+                        </button>
+                        <span style="display: inline-block; width: 4px;"></span>
+                        <span id="export_link_node"></span>
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div style="display: block; padding: 4px 0;"></div>
+    <div id="log_grid_node" style="width:99%; height: 92%;"></div>
+</div>
+<div id="standby"></div>
+</body>
+<script>
+    require(["dojo/parser", "dojo/_base/declare", "dojo/_base/lang", "dojo/has", "dojo/window", "dojo/on", "dojo/aspect", "dojo/query",
+                "dojo/dom", "dojo/dom-construct", "dojo/dom-class", "dojo/dom-geometry", "dojo/_base/array", "dojo/dom-style", "dojo/Deferred",
+                "dojo/promise/all", "dojo/date", "dojo/string",
+                "dijit/registry", "dijit/Toolbar", "dijit/Dialog", "dijit/layout/BorderContainer", "dijit/layout/TabContainer", "dijit/layout/ContentPane",
+                "dijit/form/Button", "dijit/form/TextBox", "dijit/form/RadioButton", "dijit/Tooltip", "dojox/timing", "dojox/collections/Set",
+                "dojox/widget/Standby", "dojox/charting/Chart", "dojox/charting/themes/Claro",
+                "dojox/charting/plot2d/Bars", "dojox/charting/plot2d/Pie", "dojox/charting/plot2d/Lines",
+                "dojox/charting/action2d/Tooltip", "dojox/charting/action2d/MouseZoomAndPan",
+                "dojox/charting/action2d/TouchZoomAndPan", "dojox/charting/action2d/TouchIndicator",
+                "dojox/charting/plot2d/Markers", "dojox/charting/axis2d/Default", "dojo/fx/easing",
+                "dgrid/OnDemandGrid", "dgrid/CellSelection", "dgrid/Editor",
+                "dgrid/extensions/ColumnHider", "dgrid/Keyboard",
+                "dstore/Memory",
+                "roundgis/rtutils", "roundgis/dojo_utils",
+                "rgw/em_rpc",
+                "rgw/multi_lang",
+                "dojo/ready"],
+            function (parser, declare, lang, d_has, dwin, on, aspect, dquery, dom, domc, domclass, dgeom, darray, domstyle, Deferred,
+                      all, dojo_date, dstring, registry, Toolbar,
+                      Dialog, BorderContainer, TabContainer, ContentPane, Button, TextBox, RadioButton, Tooltip,
+                      dxtiming, Set, Standby, Chart, Claro, Bars, Pie, Lines,
+                      ChartTooltip, MouseZoomAndPan, TouchZoomAndPan, TouchIndicator, ChartMarkers,
+                      ChartDefault, ChartEasing,
+                      Grid, Selection, Editor, ColumnHider, Keyboard, Memory,
+                      rtutils, dojo_utils, em_rpc,
+                      multi_lang, ready) {
+                ready(function () {
+                    var InitEnv = function () {
+                        BasicEnv.standby = new Standby({target: "main_ui_node"});
+                        document.body.appendChild(BasicEnv.standby.domNode);
+                        BasicEnv.standby.startup();
+                        BasicEnv.main_store = new Memory({idProperty: "id"});
+                        BasicEnv.group_store = new Memory({idProperty: "id"});
+                        BasicEnv.log_store = new Memory({idProperty: "cts"});
+                        BasicEnv.start_time_node = registry.byId("start_time_node");
+                        BasicEnv.stop_time_node = registry.byId("stop_time_node");
+                        BasicEnv.log_column_tbl = {
+                            "en": [
+                                {field: "cts", label: "Time", unhidable: true}
+                            ],
+                            "zh-cn": [
+                                {field: "cts", label: "时间", unhidable: true}
+                            ],
+                            "zh-tw": [
+                                {field: "cts", label: "時間", unhidable: true}
+                            ]
+                        };
+                        for(var i = 0; i!=BasicEnv.sensorids.length; ++i) {
+                            BasicEnv.log_column_tbl["en"].push({field: "avg_val"+i.toString(), label: BasicEnv.sensor_names[i]});
+                            BasicEnv.log_column_tbl["zh-cn"].push({field: "avg_val"+i.toString(), label: BasicEnv.sensor_names[i]});
+                            BasicEnv.log_column_tbl["zh-tw"].push({field: "avg_val"+i.toString(), label: BasicEnv.sensor_names[i]});
+                        }
+                    };
+
+                    var SetDgridStyle = function() {
+                        var temp = dom.byId("dgrid_style");
+                        temp.innerHTML = "";
+                        var sheet = temp.sheet;
+                        sheet.insertRule(".field-cts {text-align: center}", sheet.cssRules.length);
+                        for(var i = 0; i!= BasicEnv.sensorids.length; ++i) {
+                            sheet.insertRule(dstring.substitute(".field-avg_val${i} {text-align: center}", {"i": i}),
+                                             sheet.cssRules.length);
+                        }
+                    };
+
+                    var SyncLog = function (start_str, stop_str, mins_interval) {
+                        var start_ts = rtutils.date2ts(new Date(start_str));
+                        var stop_ts = rtutils.date2ts(new Date(stop_str));
+                        BasicEnv.standby.show();
+                        return rtutils.Rpc2Deferred(em_rpc.FindSensorMinsAvgLog({
+                                "sensorids": BasicEnv.sensorids,
+                                "start_ts": start_ts, "stop_ts": stop_ts,
+                                "mins_interval": mins_interval
+                            })).then(
+                                    function (result) {
+                                        BasicEnv.standby.hide();
+                                        BasicEnv.sensors_tbl = result.sensors_tbl;
+                                        BasicEnv.log_store.setData([]);
+                                        for(var i = 0; i!=BasicEnv.sensorids.length; ++i) {
+                                            var log_rows = result.log_tbl[BasicEnv.sensorids[i].toString()];
+                                            if(lang.isArray(log_rows) && log_rows.length > 0) {
+                                                for(var j=0; j!=log_rows.length; ++j) {
+                                                    var temp = BasicEnv.log_store.getSync(log_rows[j].cts);
+                                                    if(temp) {
+                                                        temp["sensorid"+i.toString()] = BasicEnv.sensorids[i];
+                                                        temp["avg_val"+i.toString()] = log_rows[j].avg_val;
+                                                    }
+                                                    else {
+                                                        temp = {"cts": log_rows[j].cts};
+                                                        temp["sensorid"+i.toString()] = BasicEnv.sensorids[i];
+                                                        temp["avg_val"+i.toString()] = log_rows[j].avg_val;
+                                                        BasicEnv.log_store.putSync(temp);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        BasicEnv.log_grid.refresh();
+                                    },
+                                    function (err) {
+                                        BasicEnv.standby.hide();
+                                        rtutils.ReloadWhenExpired(err);
+                                        console.log(err);
+                                    }
+                            );
+                    };
+
+                    var ExportLog = function (start_str, stop_str, mins_interval) {
+                        var start_ts = rtutils.date2ts(new Date(start_str));
+                        var stop_ts = rtutils.date2ts(new Date(stop_str));
+                        BasicEnv.standby.show();
+                        return rtutils.Rpc2Deferred(em_rpc.ExportSensorMinsAvgLog({"token": BasicEnv.sessionid,
+                                "sensorids": BasicEnv.sensorids,
+                                "start_ts": start_ts, "stop_ts": stop_ts,
+                                "mins_interval": mins_interval
+                            })).then(
+                                    function (result) {
+                                        BasicEnv.standby.hide();
+                                        var link = domc.create("a", {href: result.url,
+                                            innerHTML: "download",
+                                            target: "_blank"}, "export_link_node");
+                                    },
+                                    function (err) {
+                                        BasicEnv.standby.hide();
+                                        rtutils.ReloadWhenExpired(err);
+                                        console.log(err);
+                                    }
+                            );
+                    };
+
+                    var RenderLogGridRow = function (row, args) {
+                        var SetAvgValCell = function (grid_item, cell_node, idx) {
+                            if(grid_item["sensorid"+idx.toString()]) {
+                                var precision = rtutils.IsValidNumber(BasicEnv.sensors_tbl[grid_item["sensorid"+idx.toString()]].val_precision)?BasicEnv.sensors_tbl[grid_item["sensorid"+idx.toString()]].val_precision:1;
+                                var val_unit = BasicEnv.sensors_tbl[grid_item["sensorid"+idx.toString()]].val_unit || "";
+                                var avg_val = grid_item["avg_val"+idx.toString()];
+                                cell_node.innerHTML = (rtutils.IsValidNumber(avg_val)) ? (avg_val.toFixed(precision)+val_unit) : "n/a";
+                            }
+                            else {
+                                cell_node.innerHTML = "n/a";
+                            }
+                        };
+                        for(var i= 0; i!=BasicEnv.sensorids.length; ++i) {
+                            dquery(".field-avg_val"+i.toString(), row).forEach(function (node) {
+                                SetAvgValCell(args[0], node, i);
+                            });
+                        }
+                        dquery(".field-cts", row).forEach(function(node) {
+                            node.innerHTML = rtutils.DT2Str(rtutils.ts2date(args[0]['cts']));
+                        });
+                        return row;
+                    };
+
+                    var InitLogGrid = function () {
+                        SetDgridStyle();
+                        BasicEnv.log_grid = new declare([Grid, Selection, Keyboard, Editor, ColumnHider])({
+                            columns: rtutils.GetLangField(BasicEnv.log_column_tbl, BasicEnv.lang),
+                            selectionMode: "single",
+                            cellNavigation: true,
+                            collection: BasicEnv.log_store,
+                            minRowsPerPage: 200
+                        }, "log_grid_node");
+                        BasicEnv.log_grid.startup();
+                        aspect.after(BasicEnv.log_grid, "renderRow", function (row, args) {
+                            return RenderLogGridRow(row, args);
+                        });
+                    };
+
+                    var AfterLogin = function () {
+                        InitLogGrid();
+                    };
+                    InitEnv();
+                    AfterLogin();
+
+                    on(registry.byId("query_btn_node"), "click", function (evt) {
+                        var temp1 = BasicEnv.start_time_node.get("value");
+                        var temp2 = BasicEnv.stop_time_node.get("value");
+                        var mins_interval = parseInt(registry.byId("mins_interval_select_node").get("value"));
+                        if(lang.isString(temp1) && temp1.length > 0 && lang.isString(temp2) && temp2.length > 0) {
+                            SyncLog(temp1, temp2, mins_interval);
+                        }
+                        else {
+                            alert(rtutils.GetLangField(multi_lang.msgs["please_input_time"], BasicEnv.lang));
+                        }
+                    });
+
+                    on(registry.byId("export_btn_node"), "click", function (evt) {
+                        var temp1 = BasicEnv.start_time_node.get("value");
+                        var temp2 = BasicEnv.stop_time_node.get("value");
+                        var mins_interval = parseInt(registry.byId("mins_interval_select_node").get("value"));
+                        dom.byId("export_link_node").innerHTML = "";
+                        if(lang.isString(temp1) && temp1.length > 0 && lang.isString(temp2) && temp2.length > 0) {
+                            ExportLog(temp1, temp2, mins_interval);
+                        }
+                        else {
+                            alert(rtutils.GetLangField(multi_lang.msgs["please_input_time"], BasicEnv.lang));
+                        }
+                    });
+
+                    on(registry.byId("start_time_node"), "click", function(evt) {
+                        WdatePicker({dateFmt:'yyyy/MM/dd HH:mm', lang:'en', el: "start_time_node", readOnly: true});
+                    });
+
+                    on(registry.byId("stop_time_node"), "click", function(evt) {
+                        WdatePicker({dateFmt:'yyyy/MM/dd HH:mm', lang:'en', el: "stop_time_node", readOnly: true});
+                    });
+                });
+            });
+</script>
+</html>

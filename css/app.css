@@ -1,0 +1,26 @@
+.claro .vehicleStatusFont {
+    font-size: 0.9em;
+}
+
+a img {
+    border-style: none;
+}
+
+.claro .gmap_vehicle_marker_label {
+    color: white;
+    background-color: red;
+    font-family: "Khmer UI", "Lucida Grande", "Arial", sans-serif;
+    font-size: 13px;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.claro .rgz_kh_font {
+    font-family: "Khmer UI";
+    font-size: 15px;
+}
+
+.claro .rgy_kh_font {
+    font-family: "Khmer UI";
+    font-size: 14px;
+}

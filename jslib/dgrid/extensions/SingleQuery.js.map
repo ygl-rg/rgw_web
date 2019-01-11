@@ -1,0 +1,8 @@
+{
+"version":3,
+"file":"SingleQuery.js",
+"lineCount":3,
+"mappings":"A;AAAAA,MAAA,CAAO,8BAAP,CAAuC,CACtC,oBADsC,CAEtC,oBAFsC,CAGtC,gBAHsC,CAAvC,CAIG,QAAS,CAACC,CAAD,CAAUC,CAAV,CAAwBC,CAAxB,CAAqC,CAChD,MAAOF,EAAA,CAAQE,CAAR,CAAqB,CAQ3BC,QAASA,QAAS,EAAG,CACpB,IAAIC,EAAO,IAIX,KAAAC,UAAA,CAAeC,SAAf,CAEA,IAAK,IAAAC,oBAAL,CAIA,MAAO,KAAAC,YAAA,CAAiB,QAAS,EAAG,CACnC,IAAIC,EAAcL,CAAAK,YAAdA,CAAiCR,CAAAS,OAAA,CAAoB,KAApB,CAA2B,CAC/DC,UAAW,eADoD,CAE/DC,UAAWR,CAAAS,eAFoD,CAA3B,CAGlCT,CAAAU,YAHkC,CAArC,CAKIC,EAAeX,CAAAG,oBAAAS,MAAA,EAEnBD,EAAAE,YAAAC,KAAA,CAA8B,QAAS,CAACC,CAAD,CAAQ,CAI9C,CAFAf,CAAAgB,OAEA,CAFcD,CAEd,GACCf,CAAAiB,kBAAA,EAL6C,CAA/C,CASAN,EAAAO,OAAA,CAAoB,QAAS,EAAG,CAC/BrB,CAAAsB,QAAA,CAAqBd,CAArB,CACAL,EAAAK,YAAA,CAAmB,IAFY,CAAhC,CAKA;MAAOL,EAAAoB,mBAAA,CAAwBT,CAAxB,CAAAG,KAAA,CAA2C,QAAS,CAACO,CAAD,CAAO,CACjErB,CAAAsB,qBAAA,EACA,OAAOD,EAF0D,CAA3D,CAtB4B,CAA7B,CAXa,CARM,CAgD3BE,YAAaA,QAAS,EAAG,CACxB,IAAIF,EAAO,IAAApB,UAAA,CAAeC,SAAf,CAGX,KAAAsB,gBAAA,CAAuB,IAEvB,OAAOH,EANiB,CAhDE,CAArB,CADyC,CAJjD;",
+"sources":["SingleQuery.js.uncompressed.js"],
+"names":["define","declare","domConstruct","_StoreMixin","refresh","self","inherited","arguments","_renderedCollection","_trackError","loadingNode","create","className","innerHTML","loadingMessage","contentNode","queryResults","fetch","totalLength","then","total","_total","_insertNoDataNode","always","destroy","renderQueryResults","rows","_emitRefreshComplete","renderArray","_lastCollection"]
+}

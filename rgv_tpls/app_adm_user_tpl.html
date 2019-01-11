@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ title }}</title>
+    <meta http-equiv="content-type" content="text/html" charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+
+    <link rel="stylesheet" href="/v/jslib/dgrid/css/dgrid.css">
+    <link rel="stylesheet" href="/v/jslib/dgrid/css/skins/claro.css">
+    <link rel="stylesheet" href="/v/jslib/dijit/themes/claro/claro.css">
+    <link rel="stylesheet" href="/v/jslib/dojo/resources/dojo.css">
+    <link rel="stylesheet" href="/v/css/app.css">
+    <link rel="stylesheet" href="/{{ app_css_dir }}/dgrid_user_adm_cols.css">
+    <script>
+        var dojoConfig = {
+            parseOnLoad: true, async: true,
+            packages: [
+                {"name": "roundgis", "location": location.pathname.match(/^\//) + "v/js"},
+                {"name": "dgrid", "location": location.pathname.match(/^\//) + "v/jslib/dgrid"},
+                {"name": "dstore", "location": location.pathname.match(/^\//) + "v/jslib/dstore"},
+                {"name": "rgv", "location": location.pathname.match(/^\//) + "{{ app_js_dir }}"}
+            ]
+        };
+    </script>
+    <script>
+        //global env here
+        var BasicEnv = {
+            templatePath: location.pathname.match(/^\//) + "templates",
+            rgv_template_path: location.pathname.match(/^\//) + "{{ app_template_dir }}",
+            user: null
+        };
+        BasicEnv.sessionid = "{{ sessionid }}";
+        BasicEnv.curr_location = location.pathname.match(/^\//);
+        BasicEnv.edit_user_url = "{{ edit_user_url }}";
+    </script>
+
+    <script src="/v/jslib/dojo/dojo.js"></script>
+
+    <script type="text/javascript"
+            src="/v/jslib/My9748/WdatePicker.js">
+    </script>
+
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body, #mainwindow {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+        }
+    </style>
+    <title></title>
+</head>
+<body class="claro">
+
+<div id="mainwindow" class="rgz_kh_font" data-dojo-type="dijit/layout/BorderContainer" data-dojo-props="design:'headline',gutters:false">
+    <div data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'top'">
+        <div>
+            <input data-dojo-type="dijit/form/TextBox" data-dojo-props="trim:true,prpercase:true"
+                   type="text" id="search_input_node" required="true"
+                   style="width: 12em;"/>
+            <select data-dojo-type="dijit/form/Select" id="search_type_node">
+                <option value="id" selected="selected">account|帐号</option>
+                <option value="name">name|名字</option>
+                <option value="group_name">group's name|组名</option>
+            </select>
+            <button data-dojo-type="dijit/form/Button" id="search_btn_node">search|搜索</button>
+            <button data-dojo-type="dijit/form/Button" id="edit_btn_node">add/edit user|增加/修改用户</button>
+            <button data-dojo-type="dijit/form/Button" id="join_group_btn_node">join group|加入组</button>
+            <button data-dojo-type="dijit/form/Button" id="remove_btn_node">remove user|删除用户</button>
+            <a href="/logout">logout</a>
+        </div>
+    </div>
+
+    <div data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'center'" id="user_list_node">
+        <div id="grid_node" style="height:97%;"></div>
+    </div>
+</div>
+<div id="standby"></div>
+
+<script>
+    require(["dojo/parser", "dojo/on", "dojo/dom", "dojo/dom-construct", "dojo/aspect", "dojo/query", "dojo/_base/declare",
+                "dojo/_base/array", "dojo/_base/lang",
+                "dijit/registry", "dijit/Dialog", "dijit/form/Select", "dijit/form/TextBox", "dijit/form/ValidationTextBox", "dijit/form/Textarea",
+                "dgrid/Editor", "dgrid/Keyboard",
+                "dgrid/extensions/ColumnHider",
+                "dojox/widget/Standby", "dojox/collections/Set", "roundgis/rtutils",
+                "rgv/group_adm_rpc", "rgv/user_adm_rpc", "dgrid/OnDemandGrid", "dgrid/Selection", "dstore/Memory",
+                "rgv/EditUserGroupUI", "rgv/ConfirmDialog",
+                "dojo/ready"],
+            function (parser, on, dom, domc, aspect, query, declare, darray, lang, registry, Dialog, Select, TextBox, ValidationTextBox,
+                      Textarea, Editor, Keyboard, ColumnHider, Standby, Set,
+                      rtutils, group_adm_rpc, user_adm_rpc, Grid, Selection, Memory,
+                      EditUserGroupUI, ConfirmDialog,
+                      ready) {
+                ready(function () {
+                    var initEnv = function () {
+                        BasicEnv.standby = new Standby({target: "mainwindow"});
+                        BasicEnv.dialog = new Dialog();
+                        BasicEnv.dialog.startup();
+                        BasicEnv.store = new Memory({idProperty: "id"});
+                        BasicEnv.group_store = new Memory({idProperty: "groupid"});
+                        document.body.appendChild(BasicEnv.standby.domNode);
+                        BasicEnv.standby.startup();
+                        BasicEnv.findmode = "all";
+                        BasicEnv.columns = [
+                            {
+                                label: " ",
+                                field: "watched",
+                                autoSave: true,
+                                unhidable: true,
+                                editor: "checkbox"
+                            },
+                            {field: "id", label: "Account|帐号", unhidable: true},
+                            {field: "uno", label: "User Type|类型"},
+                            {field: "name", label: "Name|名字"},
+                            {field: "tel", label: "Phone|电话", hidden: true},
+                            {field: "email", label: "Email", hidden: true},
+                            {field: "group_names", label: "Joined Group|组"},
+                            {field: "last_ip", label: "Last Visit IP|最后访问IP", hidden: true},
+                            {field: "last_login", label: "Last Login|最后访问时间"},
+                            {field: "remark", label: "Remark|备注", hidden: true}
+                        ];
+                        BasicEnv.edit_user_group_ui = new EditUserGroupUI();
+                        BasicEnv.edit_user_group_ui.startup();
+                    };
+
+                    var initGrid = function () {
+                        BasicEnv.grid = new declare([Grid, Editor, Selection, Keyboard, ColumnHider])({
+                            columns: BasicEnv.columns,
+                            selectionMode: "single",
+                            cellNavigation: true,
+                            collection: BasicEnv.store,
+                            allowSelectAll: false,
+                            minRowsPerPage: 200
+                        }, "grid_node");
+                        BasicEnv.grid.startup();
+                        aspect.after(BasicEnv.grid, "renderRow", function (row, args) {
+                            return renderGridRow(row, args);
+                        });
+                    };
+
+                    var renderGridRow = function (row, args) {
+                        query(".field-group_names", row).forEach(function (node) {
+                            SetGroupNamesCell(args[0], node);
+                        });
+                        query(".field-last_login", row).forEach(function(node) {
+                           if(args[0].last_login>0) {
+                               node.innerHTML = rtutils.DT2Str(rtutils.ts2date(args[0].last_login));
+                           }
+                           else {
+                               node.innerHTML = "";
+                           }
+                        });
+                        return row;
+                    };
+
+                    var SetGroupNamesCell = function(grid_item, cell_node) {
+                        var group_names = darray.map(grid_item.groups, function(grp) {
+                            return grp.name;
+                        });
+                        cell_node.innerHTML = group_names.join(',');
+                    };
+
+                    var user2griditem = function (user) {
+                        return {
+                            "watched": false,
+                            "id": user.id,
+                            "name": user.name, "password": user.password,
+                            "uno": (user.uno || ""),
+                            "tel": user.tel,
+                            "email": user.email,
+                            "groups": user.groups,
+                            "last_ip": (user.last_ip || ""),
+                            "last_login": (user.last_login>0)?user.last_login:-1,
+                            "remark": (user.remark || "")
+                        };
+                    };
+
+                    var searchData = function (search_info) {
+                        BasicEnv.standby.show();
+                        var deferobj = rtutils.Rpc2Deferred(user_adm_rpc.SearchUser(BasicEnv.sessionid, search_info));
+                        return deferobj.then(function (result) {
+                            BasicEnv.standby.hide();
+                            var dataset = darray.map(result, function (item) {
+                                return user2griditem(item);
+                            });
+                            BasicEnv.store.setData(dataset);
+                            BasicEnv.grid.refresh();
+                        }, function (err) {
+                            BasicEnv.standby.hide();
+                            console.log(err);
+                        });
+                    };
+
+                    var joinGroup = function (userids, groupid, is_add) {
+                        rtutils.ShowStandby(BasicEnv.standby, BasicEnv.edit_user_group_ui.domNode);
+                        var deferobj = rtutils.Rpc2Deferred(user_adm_rpc.SetUserGroup(BasicEnv.sessionid, {"userids": userids, "groupid": groupid, "is_add": is_add}));
+                        deferobj.then(
+                                function (result) {
+                                    rtutils.HideStandby(BasicEnv.standby, "mainwindow");
+                                    for(var i =0; i!=result.length; ++i) {
+                                        var usr = BasicEnv.store.getSync(result[i].id);
+                                        usr.groups = result[i].groups;
+                                    }
+                                    BasicEnv.grid.refresh();
+                                    BasicEnv.edit_user_group_ui.setHint("ok");
+                                },
+                                function (err) {
+                                    rtutils.HideStandby(BasicEnv.standby, "mainwindow");
+                                    if (err.declaredType == "SessionExpired") {
+                                        BasicEnv.edit_user_group_ui.setHint("please login");
+                                    }
+                                    else if (err.declaredType == "InvalidId") {
+                                        BasicEnv.edit_user_group_ui.setHint("invalid id");
+                                    }
+                                    else {
+                                        BasicEnv.edit_user_group_ui.setHint("server error");
+                                    }
+                                }
+                        );
+                    };
+
+                    initEnv();
+                    initGrid();
+
+                    on(registry.byId("remove_btn_node"), "click", function () {
+                        var userids = BasicEnv.store.filter({"watched": true}).select("id").fetchSync();
+                        if (userids.length == 0) {
+                            alert("select a user first");
+                        }
+                        else {
+                            BasicEnv.standby.show();
+                            rtutils.Rpc2Deferred(user_adm_rpc.RemoveUser(BasicEnv.sessionid, userids)).then(
+                                    function (result) {
+                                        BasicEnv.standby.hide();
+                                        for (var i = 0; i != userids.length; ++i) {
+                                            BasicEnv.store.removeSync(userids[i]);
+                                        }
+                                        BasicEnv.grid.refresh();
+                                    },
+                                    function (err) {
+                                        BasicEnv.standby.hide();
+                                        console.log(err);
+                                    }
+                            );
+                        }
+                    });
+
+                    on(registry.byId("search_btn_node"), "click", function (evt) {
+                        var searchinfo = {
+                            "name": registry.byId("search_type_node").get("value"),
+                            "val": registry.byId("search_input_node").get("value")
+                        };
+                        searchData(searchinfo);
+                    });
+
+                    on(registry.byId("edit_btn_node"), "click", function () {
+                        var userids = BasicEnv.store.filter({"watched": true}).select("id").fetchSync();
+                        if (userids.length == 0) {
+                            window.open(BasicEnv.curr_location+BasicEnv.edit_user_url+"?edit_mode=add", "edit_user");
+                        }
+                        else {
+                            window.open(BasicEnv.curr_location+BasicEnv.edit_user_url+"?edit_mode=edit&userid="+userids[0], "edit_user");
+                        }
+                    });
+
+                    on(registry.byId("join_group_btn_node"), "click", function (evt) {
+                        var userids = BasicEnv.store.filter({"watched": true}).select("id").fetchSync();
+                        if (userids.length > 0) {
+                            BasicEnv.edit_user_group_ui.resetUI();
+                            BasicEnv.edit_user_group_ui.setUserIds(userids);
+                            rtutils.AttachDialog(BasicEnv.dialog, BasicEnv.edit_user_group_ui);
+                            BasicEnv.dialog.set("title", "join group");
+                            BasicEnv.dialog.show();
+                        }
+                        else {
+                            alert("select at least one user");
+                        }
+                    });
+
+                    on(BasicEnv.edit_user_group_ui, "join_group", function (evt) {
+                        joinGroup(evt.userids, evt.groupid, true);
+                    });
+
+                    on(BasicEnv.edit_user_group_ui, "quit_group", function (evt) {
+                        joinGroup(evt.userids, evt.groupid, false);
+                    });
+                });
+            });
+</script>
+</body>
+</html>

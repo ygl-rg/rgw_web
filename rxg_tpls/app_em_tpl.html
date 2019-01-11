@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ title }}</title>
+    <meta http-equiv="content-type" content="text/html" charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+
+    <link rel="stylesheet" href="/jslib/dijit/themes/claro/claro.css">
+    <link rel="stylesheet" href="/jslib/dojo/resources/dojo.css">
+    <link rel="stylesheet" href="/jslib/dgrid/css/dgrid.css">
+    <link rel="stylesheet" href="/jslib/dgrid/css/skins/claro.css">
+    <link rel="stylesheet" href="/css/app.css">
+    <script src="/js/origin_patch.js"></script>
+    <script type="text/javascript"
+            src="/jslib/My9748/WdatePicker.js">
+    </script>
+    <script>
+        var dojoConfig = {
+            parseOnLoad: true, async: true,
+            packages: [
+                {"name": "shimmy", "location": location.pathname.match(/^\//) + "jslib/shimmy"},
+                {"name": "roundgis", "location": location.pathname.match(/^\//) + "js"},
+                {"name": "dgrid", "location": location.pathname.match(/^\//) + "jslib/dgrid"},
+                {"name": "dstore", "location": location.pathname.match(/^\//) + "jslib/dstore"},
+                {"name": "rxg", "location": location.pathname.match(/^\//) + "{{ app_js_dir }}"}
+            ]
+        };
+    </script>
+    <script>
+        //global env here
+        var BasicEnv = {
+            lang: "{{ user_lang }}",
+            curr_location: location.pathname.match(/^\//),
+            templatePath: location.pathname.match(/^\//) + "templates",
+            rxg_template_path: location.pathname.match(/^\//) + "{{ app_template_dir }}",
+            imgpath: location.pathname.match(/^\//) + "imgs",
+            standby: undefined,
+            main_grid: undefined,
+            poll_timer: undefined
+        };
+        BasicEnv.em_sensor_url = "{{ em_sensor_url }}";
+    </script>
+
+    <script src="/jslib/dojo/dojo.js"></script>
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body, #main_ui_node {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        .field-watched {
+            width: 2em;
+        }
+
+        .field-name {
+            text-align: center;
+        }
+
+        .field-vals {
+            text-align: center;
+        }
+
+        .field-remaining_seconds {
+            text-align: center;
+        }
+
+        .field-watched1 {
+            width: 10%;
+        }
+    </style>
+</head>
+<body class="claro" id="body_node">
+<div data-dojo-type="dijit/layout/BorderContainer"
+     data-dojo-props="gutters: true, showTitle:false, iconClass: 'dijit_tab_icon_map'"
+     id="main_ui_node">
+    <div data-dojo-type="dijit/layout/BorderContainer" data-dojo-props="region:'center'">
+        <div style="width: 100%;"
+             data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'center'">
+            <div style="width: 100%; margin-bottom: 5px;">
+                <button data-dojo-type="dijit/form/Button"
+                        id="open_valve_btn_node">{{ open_valve_label }}
+                </button>
+                <button data-dojo-type="dijit/form/Button"
+                        id="close_valve_btn_node">{{ close_valve_label }}
+                </button>
+                <input data-dojo-type="dijit/form/TextBox" name="pwd" id="pwd_node"
+                       data-dojo-props='trim:true,placeHolder:"password"'
+                       type="password" style="width:10.5em;" />
+                <a href="_blank" id="goto_em_sensor_url_node">{{ goto_label }}</a>
+            </div>
+            <div id="switch_grid_node" style="height: 93%;"></div>
+        </div>
+    </div>
+</div>
+<div id="standby"></div>
+</body>
+<script>
+    require(["dojo/parser", "dojo/_base/declare", "dojo/_base/lang", "dojo/window", "dojo/on", "dojo/aspect", "dojo/query",
+                "dojo/dom", "dojo/dom-construct", "dojo/dom-class", "dojo/dom-geometry", "dojo/_base/array", "dojo/dom-style", "dojo/Deferred",
+                "dojo/promise/all", "dojo/cookie", "dojo/json",
+                "dijit/registry", "dijit/Dialog", "dijit/layout/BorderContainer", "dijit/layout/TabContainer", "dijit/layout/ContentPane",
+                "dijit/form/Button", "dijit/Tooltip", "dojox/timing", "dojox/collections/Set",
+                "dojox/widget/Standby", "dojox/validate", "dgrid/OnDemandGrid", "dgrid/CellSelection", "dgrid/Editor",
+                "dgrid/extensions/ColumnHider", "dgrid/Keyboard",
+                "dstore/Memory",
+                "roundgis/rtutils", "roundgis/dojo_utils",
+                "rxg/em_rpc",
+                "rxg/multi_lang",
+                "dojo/ready"],
+            function (parser, declare, lang, dwin, on, aspect, query, dom, domc, domclass, dgeom, darray, domstyle,
+                      Deferred, all, dcookie, djson, registry,
+                      Dialog, BorderContainer, TabContainer, ContentPane, Button, Tooltip,
+                      dxtiming, Set, Standby, dx_validate, Grid, Selection, Editor, ColumnHider, Keyboard,
+                      Memory,
+                      rtutils, dojo_utils,
+                      em_rpc,
+                      multi_lang, ready) {
+                ready(function () {
+                    var InitEnv = function () {
+                        BasicEnv.standby = new Standby({target: "main_ui_node"});
+                        document.body.appendChild(BasicEnv.standby.domNode);
+                        BasicEnv.standby.startup();
+                        BasicEnv.main_columns = [
+                            {field: "name", label: "Name", unhidable: true}
+                        ];
+                        BasicEnv.switch_col_tbl = {
+                            "en": [
+                                {
+                                    label: " ",
+                                    field: "watched",
+                                    autoSave: true,
+                                    unhidable: true,
+                                    editor: "radio"
+                                },
+                                {field: "name", label: "Name"},
+                                {field: "vals", label: "Status"}
+                            ],
+                            "zh-cn": [
+                                {
+                                    label: " ",
+                                    field: "watched",
+                                    autoSave: true,
+                                    unhidable: true,
+                                    editor: "checkbox"
+                                },
+                                {field: "name", label: "名字"},
+                                {field: "vals", label: "状态"}
+                            ]
+                        };
+                        BasicEnv.status_tbl = {
+                            "ON": {"en": "on", "zh-cn": "打开"},
+                            "OFF": {"en": "off", "zh-cn": "关闭"},
+                            "OFFLINE": {"en": "offline", "zh-cn": "离线"},
+                            "ONLINE": {"en": "online", "zh-cn": "在线"}
+                        };
+                        BasicEnv.group_store = new Memory({idProperty: "id"});
+                        BasicEnv.zb_dev_store = new Memory({idProperty: "id"});
+                        BasicEnv.open_valve_btn_node = registry.byId("open_valve_btn_node");
+                        BasicEnv.close_valve_btn_node = registry.byId("close_valve_btn_node");
+                        BasicEnv.schedule_btn_node = registry.byId("schedule_btn_node");
+                        BasicEnv.dialog = new Dialog();
+                        BasicEnv.dialog.startup();
+                        BasicEnv.msg_box = new Dialog();
+                        BasicEnv.msg_box.startup();
+                    };
+
+                    var TranslateUI = function() {
+                    };
+
+                    var ZbDev2GridItem = function(mdl) {
+                        return {
+                            "watched": false,
+                            "id": mdl.id,
+                            "name": mdl.name || "",
+                            "nid": mdl.nid,
+                            "vals": mdl.vals
+                        };
+                    };
+
+                    var SyncSwitch = function (get_vals) {
+                        return rtutils.Rpc2Deferred(em_rpc.ListDevice({"list_no": "switch", "get_vals": get_vals})).then(
+                                    function (result) {
+                                        if (result.length > 0) {
+                                            for(var i = 0; i!==result.length; ++i) {
+                                                if(get_vals) {
+                                                    var switch_tbl = BasicEnv.zb_dev_store.getSync(result[i].id);
+                                                    if(switch_tbl) {
+                                                        rtutils.Mixin(switch_tbl, result[i], ["vals"]);
+                                                    }
+                                                }
+                                                else {
+                                                    BasicEnv.zb_dev_store.putSync(ZbDev2GridItem(result[i]));
+                                                }
+                                            }
+                                            BasicEnv.switch_grid.refresh();
+                                        }
+                                    },
+                                    function (err) {
+                                        rtutils.ReloadWhenExpired(err);
+                                        console.log(err);
+                                    }
+                            );
+                    };
+
+                    var RenderValveGridRow = function (row, args) {
+                        var SetValsCell = function (valve, cell_node) {
+                            var val = (lang.isArray(valve.vals) && valve.vals.length>0)?valve.vals[0]:"OFFLINE";
+                            cell_node.innerHTML = rtutils.GetLangField(BasicEnv.status_tbl[val], BasicEnv.lang);
+                        };
+                        query(".field-vals", row).forEach(function (node) {
+                            SetValsCell(args[0], node);
+                        });
+                        return row;
+                    };
+
+                    var InitValveGrid = function () {
+                        BasicEnv.switch_grid = new declare([Grid, Selection, Keyboard, Editor])({
+                            columns: rtutils.GetLangField(BasicEnv.switch_col_tbl, BasicEnv.lang),
+                            selectionMode: "single",
+                            cellNavigation: true,
+                            collection: BasicEnv.zb_dev_store,
+                            minRowsPerPage: 200
+                        }, "switch_grid_node");
+                        BasicEnv.switch_grid.startup();
+                        aspect.after(BasicEnv.switch_grid, "renderRow", function (row, args) {
+                            return RenderValveGridRow(row, args);
+                        });
+                        on(BasicEnv.switch_grid, "dgrid-select", function (evt) {
+                            if (evt.cells[0].column.field == "id") {
+                            }
+                            else {
+                            }
+                        });
+                    };
+
+                    var InitMgrs = function () {
+                        BasicEnv.poll_timer = new dxtiming.Timer(5*1000);
+                        BasicEnv.poll_timer.onTick = function () {
+                            SyncSwitch(true);
+                        };
+                    };
+
+                    var RefreshApp = function () {
+                        BasicEnv.standby.show();
+                        SyncSwitch(false).then(
+                                function (flag) {
+                                    BasicEnv.standby.hide();
+                                    BasicEnv.poll_timer.start();
+                                },
+                                function (err) {
+                                    BasicEnv.standby.hide();
+                                    console.log(err);
+                                }
+                        );
+                    };
+
+                    var AfterLogin = function () {
+                        InitValveGrid();
+                        InitMgrs();
+                        setTimeout(function () {
+                            RefreshApp();
+                        }, 1500);
+                    };
+                    InitEnv();
+                    TranslateUI();
+                    AfterLogin();
+
+                    on(BasicEnv.open_valve_btn_node, "click", function (evt) {
+                        var devids = BasicEnv.zb_dev_store.filter({"watched": true}).select("id").fetchSync();
+                        if (devids.length > 0) {
+                            var para = {"arg": {"deviceid": devids[0]},
+                                        "token": registry.byId("pwd_node").get("value")};
+                            BasicEnv.standby.show();
+                            var defer_obj = rtutils.Rpc2Deferred(em_rpc.OpenSwitch(para));
+                            defer_obj.then(
+                                    function (result) {
+                                        BasicEnv.standby.hide();
+                                    },
+                                    function (err) {
+                                        BasicEnv.standby.hide();
+                                        rtutils.ReloadWhenExpired(err);
+                                        if(err.declaredType == "NoRight") {
+                                            rtutils.ShowMsgBox(BasicEnv.msg_box, rtutils.GetLangField(multi_lang.errs.no_right, BasicEnv.lang));
+                                        }
+                                        else {
+                                            rtutils.ShowMsgBox(BasicEnv.msg_box, rtutils.GetLangField(multi_lang.errs.server_error, BasicEnv.lang));
+                                        }
+                                    }
+                            );
+                        }
+                        else {
+                            rtutils.ShowMsgBox(BasicEnv.msg_box, rtutils.GetLangField(multi_lang.msgs["please_select_relay_switch"], BasicEnv.lang));
+                        }
+                    });
+
+                    on(BasicEnv.close_valve_btn_node, "click", function (evt) {
+                        var devids = BasicEnv.zb_dev_store.filter({"watched": true}).select("id").fetchSync();
+                        if (devids.length > 0) {
+                            var para = {"arg": {"deviceid": devids[0]},
+                                        "token": registry.byId("pwd_node").get("value")};
+                            BasicEnv.standby.show();
+                            var defer_obj = rtutils.Rpc2Deferred(em_rpc.CloseSwitch(para));
+                            defer_obj.then(
+                                    function (result) {
+                                        BasicEnv.standby.hide();
+                                    },
+                                    function (err) {
+                                        BasicEnv.standby.hide();
+                                        rtutils.ReloadWhenExpired(err);
+                                        if(err.declaredType == "NoRight") {
+                                            rtutils.ShowMsgBox(BasicEnv.msg_box, rtutils.GetLangField(multi_lang.errs.no_right, BasicEnv.lang));
+                                        }
+                                        else if(err.declaredType == "Timeout") {
+                                            rtutils.ShowMsgBox(BasicEnv.msg_box, rtutils.GetLangField(multi_lang.errs.timeout, BasicEnv.lang));
+                                        }
+                                        else {
+                                            rtutils.ShowMsgBox(BasicEnv.msg_box, rtutils.GetLangField(multi_lang.errs.server_error, BasicEnv.lang));
+                                        }
+                                    }
+                            );
+                        }
+                        else {
+                            rtutils.ShowMsgBox(BasicEnv.msg_box, rtutils.GetLangField(multi_lang.msgs["please_select_relay_switch"], BasicEnv.lang));
+                        }
+                    });
+
+                    on(dom.byId("goto_em_sensor_url_node"), "click", function(evt) {
+                        evt.preventDefault();
+                        window.open(BasicEnv.curr_location+BasicEnv.em_sensor_url,
+                                    BasicEnv.em_sensor_url);
+
+                    });
+                });
+            });
+</script>
+</html>

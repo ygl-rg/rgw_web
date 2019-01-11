@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ title }}</title>
+    <meta http-equiv="content-type" content="text/html" charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+
+    <link rel="stylesheet" href="/v/jslib/dojo/resources/dojo.css">
+    <link rel="stylesheet" href="/v/jslib/dgrid/css/dgrid.css">
+    <link rel="stylesheet" href="/v/jslib/dgrid/css/skins/claro.css">
+    <link rel="stylesheet" href="/v/jslib/dijit/themes/claro/claro.css">
+    <link rel="stylesheet" href="/{{ app_css_dir }}/dijit_btns.css">
+    <script>
+        var dojoConfig= { parseOnLoad: true, async: true,
+            packages: [
+                {"name": "roundgis", "location": location.pathname.match(/^\//) + "v/js"},
+                {"name": "dgrid", "location": location.pathname.match(/^\//) + "v/jslib/dgrid" },
+                {"name": "dstore", "location": location.pathname.match(/^\//)+"v/jslib/dstore"},
+                {"name": "rgv", "location": location.pathname.match(/^\//) + "{{ app_js_dir }}"}
+            ]
+        };
+    </script>
+    <script>
+        //global env here
+        var BasicEnv = {templatePath: location.pathname.match(/^\//) + "templates",
+                        rgv_template_path: location.pathname.match(/^\//) + "{{ app_template_dir }}"};
+        BasicEnv.sessionid = "{{ sessionid }}";
+        BasicEnv.edit_mode = "{{ edit_mode }}";
+        BasicEnv.sensorid = "{{ sensorid }}";
+    </script>
+
+    <script src="/v/jslib/dojo/dojo.js"></script>
+
+    <script type="text/javascript"
+            src="/v/jslib/My9748/WdatePicker.js">
+    </script>
+
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        html,body,#main_window {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+        }
+    </style>
+</head>
+<body class="claro" id="body_node">
+<div id="main_window">
+    <table style="margin: 0 auto">
+        <tr>
+            <td>id: </td>
+            <td><input data-dojo-type="dijit/form/TextBox"
+                       data-dojo-props="trim:true,prpercase:true"
+                       id="id_input_node"
+                       type="text" style="width: 20em;"/></td>
+        </tr>
+        <tr>
+            <td>owner id (required)|设备ID(必须): </td>
+            <td><input data-dojo-type="dijit/form/TextBox"
+                       data-dojo-props="trim:true,prpercase:true"
+                       id="ownerid_input_node"
+                       type="text" style="width: 20em;"/></td>
+        </tr>
+        <tr>
+            <td>nid (required, 0-128 only)|偏移量(必须,范围:0-128): </td>
+            <td><input data-dojo-type="dijit/form/TextBox"
+                       data-dojo-props="trim:true,prpercase:true"
+                       id="nid_input_node"
+                       type="text" style="width: 5em;"/></td>
+        </tr>
+        <tr>
+            <td>name|名字: </td>
+            <td> <input data-dojo-type="dijit/form/TextBox"
+                        data-dojo-props="trim:true,prpercase:true"
+                        type="text"
+                        id="name_input_node" required="true"
+                        style="width: 20em;"/></td>
+        </tr>
+        <tr>
+            <td>extra arg0|附加参数1: </td>
+            <td>
+                <input data-dojo-type="dijit/form/TextBox"
+                        data-dojo-props="trim:true,prpercase:true"
+                        type="text"
+                        id="extra_arg0_input_node" required="true"
+                        style="width: 4em;"/></td>
+            </td>
+        </tr>
+        <tr>
+            <td>sensor type id|传感器类型ID: </td>
+            <td>
+                <input data-dojo-type="dijit/form/TextBox"
+                        data-dojo-props="trim:true,prpercase:true"
+                        type="text"
+                        id="sensor_typeid_input_node" required="true"
+                        style="width: 4em;"/></td>
+            </td>
+        </tr>
+        <tr>
+            <td>sdi12-nid (address)|sdi12地址: </td>
+            <td>
+                <input data-dojo-type="dijit/form/TextBox"
+                        data-dojo-props="trim:true,prpercase:true"
+                        type="text"
+                        id="sdi12_nid_input_node" required="true"
+                        style="width: 4em;"/></td>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <button data-dojo-type="dijit/form/Button"
+                id="ok_btn_node">ok</button>
+            </td>
+            <td><label id="hint_node"></label></td>
+        </tr>
+    </table>
+</div>
+<div id="standby"></div>
+
+<script>
+require(["dojo/parser", "dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-style", "dojo/aspect", "dojo/query", "dojo/_base/declare",
+         "dojo/_base/lang", "dojo/_base/array",
+         "dijit/registry", "dijit/form/Select", "dijit/form/TextBox", "dijit/form/ValidationTextBox",
+         "dijit/form/Textarea", "dijit/form/CheckBox",
+         "dojox/widget/Standby",  "roundgis/rtutils", "roundgis/dojo_utils", "dstore/Memory",
+         "dojox/validate", "rgv/sensor_adm_rpc",
+         "dojo/ready"],
+        function(parser, on, dom, domc, doms, aspect, query, declare, lang, darray, registry, Select, TextBox, ValidationTextBox,
+                 Textarea, CheckBox, Standby,
+                 rtutils, dojo_utils, Memory, dx_validate, sensor_adm_rpc,
+                 ready) {
+            ready(function() {
+                var initEnv = function() {
+                    BasicEnv.standby = new Standby({target:"main_window"});
+                    document.body.appendChild(BasicEnv.standby.domNode);
+                    BasicEnv.standby.startup();
+                };
+
+                var AfterInit = function() {
+                    registry.byId("id_input_node").set("disabled", true);
+                    if(BasicEnv.edit_mode == "edit") {
+                        registry.byId("ownerid_input_node").set("disabled", true);
+                        registry.byId("nid_input_node").set("disabled", true);
+                        GetSensor(BasicEnv.sensorid);
+                    }
+                };
+
+                var GetSensor = function(sensorid) {
+                    BasicEnv.standby.show();
+                    rtutils.Rpc2Deferred(sensor_adm_rpc.GetSensor(BasicEnv.sessionid, sensorid)).then(
+                            function(result) {
+                                BasicEnv.standby.hide();
+                                SetUI(result);
+                            },
+                            function(err) {
+                                BasicEnv.standby.hide();
+                                rtutils.ReloadWhenExpired(err);
+                                SetHint("server error");
+                            }
+                    );
+                };
+
+                var SetHint = function(hint) {
+                    dom.byId("hint_node").innerHTML = hint;
+                };
+
+                var SetUI = function(sensor) {
+                    registry.byId("id_input_node").set("value", sensor.id);
+                    registry.byId("ownerid_input_node").set("value", (sensor.ownerid || ""));
+                    registry.byId("name_input_node").set("value", sensor.name);
+                    registry.byId("nid_input_node").set("value", sensor.nid.toString());
+                    registry.byId("extra_arg0_input_node").set("value", (rtutils.IsValidNumber(sensor.extra_arg0))?sensor.extra_arg0.toString():"");
+                    registry.byId("sensor_typeid_input_node").set("value", (rtutils.IsValidNumber(sensor.typeid))?sensor.typeid.toString():"0");
+                    registry.byId("sdi12_nid_input_node").set("value", (rtutils.IsValidNumber(sensor.sdi12_nid))?sensor.sdi12_nid.toString():"-1");
+                };
+
+                var MakeSensor = function() {
+                    var data = {};
+                    data.id = registry.byId("id_input_node").get("value");
+                    data.name = registry.byId("name_input_node").get("value");
+                    data.ownerid = registry.byId("ownerid_input_node").get("value");
+                    data.nid = parseInt(registry.byId("nid_input_node").get("value"));
+                    var extra_arg0 = parseFloat(registry.byId("extra_arg0_input_node").get("value"));
+                    data.extra_arg0 = (rtutils.IsValidNumber(extra_arg0))?extra_arg0:null;
+                    var typeid = parseInt(registry.byId("sensor_typeid_input_node").get("value"));
+                    data.typeid = (rtutils.IsValidNumber(typeid))?typeid:0;
+                    var sdi12_nid = parseInt(registry.byId("sdi12_nid_input_node").get("value"));
+                    data.sdi12_nid = (rtutils.IsValidNumber(sdi12_nid))?sdi12_nid:-1;
+                    return data;
+                };
+
+                var SetSensor = function(sensor) {
+                    BasicEnv.standby.show();
+                    var deferobj = undefined;
+                    if(BasicEnv.edit_mode == "edit") {
+                        deferobj = rtutils.Rpc2Deferred(sensor_adm_rpc.SetSensor(BasicEnv.sessionid, {"sensor": sensor}));
+                    }
+                    else {
+                        deferobj = rtutils.Rpc2Deferred(sensor_adm_rpc.AddSensor(BasicEnv.sessionid, {"sensor": sensor}))
+                    }
+                    deferobj.then(
+                            function(result) {
+                                rtutils.HideStandby(BasicEnv.standby, "main_window");
+                                SetHint("ok");
+                            },
+                            function(err) {
+                                rtutils.ReloadWhenExpired(err);
+                                rtutils.HideStandby(BasicEnv.standby, "main_window");
+                                if(err.declaredType == "InvalidId") {
+                                    SetHint("id invalid");
+                                }
+                                else if(err.declaredType == "SensorConflict") {
+                                    SetHint("sensor existed/offset conflicts");
+                                }
+                                else {
+                                    SetHint("server error");
+                                }
+                            }
+                        );
+                };
+
+                initEnv();
+                AfterInit();
+
+                on(registry.byId("ok_btn_node"), "click", function(evt) {
+                    var new_dev = MakeSensor();
+                    if(!dojox.validate.isText(new_dev.ownerid, {minlength: 8, maxlength: 40})) {
+                        SetHint("owner id incorrect");
+                    }
+                    else if(!dojox.validate.isInRange(new_dev.nid, {min: 0, max: 128})) {
+                        SetHint("numeric id incorrect");
+                    }
+                    else {
+                        SetSensor(new_dev);
+                    }
+                });
+            });
+        });
+</script>
+</body>
+</html>

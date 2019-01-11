@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ title }}</title>
+    <meta http-equiv="content-type" content="text/html" charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <link rel="stylesheet" href="/jslib/dijit/themes/claro/claro.css">
+    <link rel="stylesheet" href="/jslib/dgrid/css/dgrid.css">
+    <link rel="stylesheet" href="/jslib/dgrid/css/skins/claro.css">
+    <link rel="stylesheet" href="/jslib/dojo/resources/dojo.css">
+    <link rel="stylesheet" href="/css/app.css">
+
+    <script src="/js/origin_patch.js"></script>
+    <script type="text/javascript"
+            src="/jslib/My9748/WdatePicker.js">
+    </script>
+    <script>
+        var dojoConfig= { parseOnLoad: true, async: true,
+            packages: [
+                {"name": "shimmy", "location": location.pathname.match(/^\//) + "jslib/shimmy"},
+                {"name": "roundgis", "location": location.pathname.match(/^\//) + "js"},
+                {"name": "dgrid", "location": location.pathname.match(/^\//) + "jslib/dgrid"},
+                {"name": "dstore", "location": location.pathname.match(/^\//) + "jslib/dstore"},
+                {"name": "rgw", "location": location.pathname.match(/^\//) + "{{ app_js_dir }}"}
+            ]
+        };
+    </script>
+    <script>
+        //global env here
+        var BasicEnv = {curr_location: location.pathname.match(/^\//),
+                        templatePath: location.pathname.match(/^\//) + "templates",
+                        rgw_template_path: location.pathname.match(/^\//) + "{{ app_template_dir }}",
+                        imgpath: location.pathname.match(/^\//)+"imgs"
+                       };
+        BasicEnv.search_arg = {};
+        BasicEnv.sessionid = "{{ sessionid }}";
+        BasicEnv.lang = "{{ user_lang }}";
+        BasicEnv.view_switch_on_detail_url = "{{ switch_on_detail_url }}";
+        BasicEnv.days = 0;
+        BasicEnv.search_result = undefined;
+    </script>
+
+    <script src="/jslib/dojo/dojo.js"></script>
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        html,body,#main_window {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+        }
+    </style>
+    <style id="dgrid_style"></style>
+</head>
+<body class="claro">
+    <div data-dojo-type="dijit/layout/ContentPane"
+         style="overflow-y: hidden;" id="main_window">
+        <div style="width: 99%; margin-bottom: 5px; margin-left: 4px;">
+                <input type="text" id="start_time_node" required="true"/>
+                <button data-dojo-type="dijit/form/Button"
+                        id="query_btn_node">ok</button>
+                <button data-dojo-type="dijit/form/Button"
+                        id="export_btn_node">{{ export_label }}</button>
+                <span id="export_link_node"></span>
+        </div>
+        <div id="grid_node" style="width:99%; height: 89%; margin-left: 4px;"></div>
+    </div>
+<div id="standby"></div>
+
+<script>
+require(["dojo/parser", "dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-style", "dojo/aspect", "dojo/query", "dojo/_base/declare",
+    "dojo/_base/lang", "dojo/_base/array", "dojo/sniff", "dojo/string",
+    "dijit/registry", "dijit/form/Select", "dijit/layout/TabContainer", "dijit/layout/ContentPane",
+    "dijit/form/Button",
+    "dojox/widget/Standby",
+    "dgrid/OnDemandGrid", "dgrid/CellSelection", "dgrid/Editor",
+    "dgrid/extensions/ColumnHider", "dgrid/extensions/ColumnResizer", "dgrid/Keyboard",
+    "dstore/Memory",
+    "roundgis/rtutils", "rgw/em_rpc",
+    "dojo/ready"],
+        function(parser, on, dom, domc, doms, aspect, dquery, declare, lang,
+                 darray, dhas, dstring, registry, Select,
+                 TabContainer, ContentPane, Button, Standby,
+                 Grid, CellSelection, Editor, ColumnHider, ColumnResizer, Keyboard,
+                 Memory, rtutils, em_rpc,
+                 ready) {
+            ready(function() {
+                var InitEnv = function() {
+                    BasicEnv.standby = new Standby({target:"main_window"});
+                    BasicEnv.store = new Memory({idProperty: "id"});
+                    document.body.appendChild(BasicEnv.standby.domNode);
+                    BasicEnv.standby.startup();
+                    BasicEnv.start_time_node = dom.byId("start_time_node");
+                    BasicEnv.query_btn_node = registry.byId("query_btn_node");
+                };
+
+                var SetDgridStyle = function(days) {
+                    var temp = dom.byId("dgrid_style");
+                    temp.innerHTML = "";
+                    var sheet = temp.sheet;
+                    sheet.insertRule(".field-name {text-align: center; width:15em;}", sheet.cssRules.length);
+                    for(var i = 0; i !== days; ++i) {
+                        sheet.insertRule(dstring.substitute(".field-day${i} {text-align: center; width: 5em;}", {"i": i}), sheet.cssRules.length);
+                    }
+                };
+
+                var GetColumns = function() {
+                    var ColumnLabel = function(idx) {
+                        return dstring.substitute("${month}-${day}",
+                                                  {month: BasicEnv.search_arg.month,
+                                                   day: idx+1});
+                    };
+                    var columns = [{field: "name", label: ""}];
+                    for(var i = 0; i!== BasicEnv.days; ++i) {
+                        columns.push({field: "day"+i.toString(), label: ColumnLabel(i)});
+                    }
+                    return columns;
+                };
+
+                var SearchResult2GridDataSet = function(result) {
+                    var dataset = [];
+                    for(var i = 0; i!==result.switches.length; ++i) {
+                        var usages = result.rec_tbl[result.switches[i]['id']];
+                        var temp = {"name": result.switches[i]['name'],
+                                    "id": result.switches[i]['id']};
+                        for(var j = 0; j!==usages.length; ++j) {
+                            temp["day"+j.toString()] = usages[j]['val'];
+                        }
+                        dataset.push(temp)
+                    }
+                    return dataset;
+                };
+
+                var RenderGridRow = function (row, args) {
+                    var SetValCell = function (grid_item, cell_node, idx) {
+                        if(grid_item["day"+idx.toString()] > 0) {
+                            cell_node.innerHTML = rtutils.seconds2hhmmss(grid_item["day"+idx.toString()]);
+                        }
+                        else {
+                            cell_node.innerHTML = "";
+                        }
+                    };
+                    var SetNameCell = function(grid_item, cell_node) {
+                        var postfix = dstring.substitute("${prefix}?switchid=${id}",
+                                {prefix: BasicEnv.view_switch_on_detail_url,
+                                 id: grid_item.id});
+                        var url_str = BasicEnv.curr_location+postfix;
+                        cell_node.innerHTML = dstring.substitute("<a href=\"${url}\">${name}</a>",
+                                {url: url_str, name: grid_item.name});
+                    };
+                    for(var i= 0; i!==BasicEnv.days; ++i) {
+                        dquery(".field-day"+i.toString(), row).forEach(function (node) {
+                            SetValCell(args[0], node, i);
+                        });
+                    }
+                    dquery(".field-name", row).forEach(function(node) {
+                        SetNameCell(args[0], node);
+                    });
+                    return row;
+                };
+
+                var InitGrid = function () {
+                    BasicEnv.grid_obj = new declare([Grid, CellSelection, Keyboard, Editor, ColumnHider])({
+                            columns: GetColumns(),
+                            selectionMode: "single",
+                            cellNavigation: true,
+                            collection: BasicEnv.store,
+                            minRowsPerPage: 200
+                        }, "grid_node");
+                        BasicEnv.grid_obj.startup();
+                        aspect.after(BasicEnv.grid_obj, "renderRow", function (row, args) {
+                            return RenderGridRow(row, args);
+                        });
+                };
+
+                var SetGrid = function(result) {
+                    SetDgridStyle(BasicEnv.days);
+                    if(!BasicEnv.grid_obj) {
+                        InitGrid();
+                    }
+                    BasicEnv.grid_obj.set('columns', GetColumns());
+                    BasicEnv.store.setData(SearchResult2GridDataSet(result));
+                    BasicEnv.grid_obj.refresh();
+                };
+
+                var SearchInputValid = function() {
+                    if(BasicEnv.start_time_node.value) {
+                        return true;
+                    }
+                    else {
+                        return false;
+                    }
+                };
+
+                var GetSearchArg = function() {
+                    var dt_obj = new Date(BasicEnv.start_time_node.value);
+                    var temp = rtutils.GetYearMonth(dt_obj);
+                    return {"year": temp[0], "month": temp[1], "token": BasicEnv.sessionid};
+                };
+
+                var AfterLogin = function() {
+                };
+
+                InitEnv();
+                AfterLogin();
+
+                on(BasicEnv.start_time_node, "click", function(evt) {
+                    if(dhas("ie") || dhas('mozilla')) {
+                        WdatePicker({dateFmt:'yyyy-MM', lang:'en', readOnly: true});
+                    }
+                    else {
+                        WdatePicker({dateFmt:'yyyy/MM', lang:'en', readOnly: true});
+                    }
+                });
+
+                on(BasicEnv.query_btn_node, "click", function(evt) {
+                    if(SearchInputValid()) {
+                        BasicEnv.standby.show();
+                        BasicEnv.search_arg = GetSearchArg();
+                        var defer_obj = rtutils.Rpc2Deferred(em_rpc.ListSwitchMonthlyUsage(BasicEnv.search_arg));
+                        defer_obj.then(
+                                function(result) {
+                                    BasicEnv.standby.hide();
+                                    BasicEnv.search_result = result;
+                                    if(result.switches.length > 0) {
+                                        BasicEnv.days = result.rec_tbl[result.switches[0]['id']].length;
+                                        SetGrid(result);
+                                    }
+                                    else {
+                                        alert("no data");
+                                    }
+                                },
+                                function(err) {
+                                    BasicEnv.standby.hide();
+                                    rtutils.ReloadWhenExpired(err);
+                                    alert(err.declaredType);
+                                }
+                        );
+                    }
+                    else {
+                        alert("start time is required");
+                    }
+                });
+
+                on(registry.byId("export_btn_node"), "click", function(evt) {
+                    dom.byId("export_link_node").innerHTML = "";
+                    if(SearchInputValid()) {
+                        BasicEnv.standby.show();
+                        BasicEnv.search_arg = GetSearchArg();
+                        var defer_obj = rtutils.Rpc2Deferred(em_rpc.ExportSwitchMonthlyUsage(BasicEnv.search_arg));
+                        defer_obj.then(
+                                function(result) {
+                                    BasicEnv.standby.hide();
+                                    var link = domc.create("a", {href: result.url,
+                                            innerHTML: "download",
+                                            target: "_blank"}, "export_link_node");
+                                },
+                                function(err) {
+                                    BasicEnv.standby.hide();
+                                    rtutils.ReloadWhenExpired(err);
+                                    alert(err.declaredType);
+                                }
+                        );
+                    }
+                    else {
+                        alert("start time is required");
+                    }
+                });
+            });
+        });
+</script>
+</body>
+</html>

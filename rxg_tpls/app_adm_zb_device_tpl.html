@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ title }}</title>
+    <meta http-equiv="content-type" content="text/html" charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+
+    <link rel="stylesheet" href="/jslib/dojo/resources/dojo.css">
+    <link rel="stylesheet" href="/jslib/dgrid/css/dgrid.css">
+    <link rel="stylesheet" href="/jslib/dgrid/css/skins/claro.css">
+    <link rel="stylesheet" href="/jslib/dijit/themes/claro/claro.css">
+    <link rel="stylesheet" href="/{{ app_css_dir }}/dgrid_zb_device_adm_cols.css">
+    <link rel="stylesheet" href="/{{ app_css_dir }}/dijit_btns.css">
+    <script>
+        var dojoConfig= { parseOnLoad: true, async: true,
+            packages: [
+                {"name": "roundgis", "location": location.pathname.match(/^\//) + "js"},
+                {"name": "dgrid", "location": location.pathname.match(/^\//) + "jslib/dgrid" },
+                {"name": "dstore", "location": location.pathname.match(/^\//)+"jslib/dstore"},
+                {"name": "rxg", "location": location.pathname.match(/^\//) + "{{ app_js_dir }}"}
+            ]
+        };
+    </script>
+    <script>
+        //global env here
+        var BasicEnv = {templatePath: location.pathname.match(/^\//) + "templates",
+                        rxg_template_path: location.pathname.match(/^\//) + "{{ app_template_dir }}"};
+        BasicEnv.sessionid = "{{ sessionid }}";
+        BasicEnv.curr_location = location.pathname.match(/^\//);
+        BasicEnv.edit_zb_device_url = "{{ edit_zb_dev_url }}";
+        BasicEnv.op_log_url = "{{ op_log_url }}";
+        BasicEnv.op_error_count_url = "{{ op_error_count_url }}";
+        BasicEnv.recap_zb_device_url = "{{ recap_zb_dev_url }}";
+        BasicEnv.zb_module_adm_url = "{{ zb_module_adm_url }}";
+    </script>
+
+    <script src="/jslib/dojo/dojo.js"></script>
+
+    <script type="text/javascript"
+            src="/jslib/My9748/WdatePicker.js">
+    </script>
+
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        html,body,#mainwindow {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+        }
+    </style>
+</head>
+<body class="claro" id="body_node">
+<div id="mainwindow" data-dojo-type="dijit/layout/BorderContainer" data-dojo-props="design:'headline',gutters:false">
+    <div data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'top'">
+        <div>
+            <button data-dojo-type="dijit/form/Button" id="edit_btn_node">edit device|编辑设备</button>
+            <button data-dojo-type="dijit/form/Button" id="reboot_btn_node">reboot device|重启设备</button>
+            <button data-dojo-type="dijit/form/Button" id="reset_btn_node">reset device|重置设备</button>
+            <button data-dojo-type="dijit/form/Button" id="remove_btn_node">remove device|移除设备</button>
+            <input data-dojo-type="dijit/form/TextBox" data-dojo-props="trim:true,prpercase:true"
+               type="text" id="search_input_node" required="true"
+               style="width: 12em;"/>
+            <input data-dojo-type="dijit/form/TextBox" data-dojo-props="trim:true,prpercase:true"
+               type="text" id="search_input2_node" required="true"
+               style="width: 6em;"/>
+            <select data-dojo-type="dijit/form/Select" id="search_type_node">
+                    <option value="id" selected="selected">id</option>
+                    <option value="name">name</option>
+            </select>
+            <button data-dojo-type="dijit/form/Button" id="search_btn_node">search|搜索</button>
+            <input id="device_checkbox_node" data-dojo-type="dijit/form/CheckBox" />
+            <button data-dojo-type="dijit/form/Button" id="recap_device_btn_node">recap device|找回设备</button>
+            <button data-dojo-type="dijit/form/Button" id="log_btn_node">op log|操作记录</button>
+            <button data-dojo-type="dijit/form/Button" id="err_count_btn_node">op error count|操作错误记录</button>
+            <button data-dojo-type="dijit/form/Button" id="goto_zb_module_adm_btn_node">go to zb module adm|前往zb模组管理</button>
+        </div>
+    </div>
+    <div
+         data-dojo-type="dijit/layout/ContentPane"
+         data-dojo-props="region:'center'">
+        <div id="grid_node" style="height:97%;"></div>
+    </div>
+</div>
+<div id="standby"></div>
+
+<script>
+require(["dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-style", "dojo/aspect", "dojo/query", "dojo/_base/declare",
+         "dojo/_base/lang", "dojo/_base/array",
+         "dijit/registry", "dijit/form/Select", "dijit/form/TextBox", "dijit/form/ValidationTextBox",
+         "dijit/form/Textarea", "dijit/form/CheckBox", "dijit/Dialog", "dgrid/Editor", "dgrid/Keyboard",
+         "dgrid/extensions/ColumnHider",
+         "dojox/widget/Standby",  "roundgis/rtutils", "roundgis/dojo_utils",
+         "dgrid/OnDemandGrid", "dgrid/Selection", "dstore/Memory",
+         "rxg/zb_device_rpc", "rxg/ConfirmDialog",
+         "dojo/ready"],
+        function(on, dom, domc, doms, aspect, query, declare, lang, darray, registry, Select,
+                 TextBox, ValidationTextBox,
+                 Textarea, CheckBox, Dialog, Editor, Keyboard, ColumnHider, Standby,
+                 rtutils, dojo_utils, Grid,  Selection, Memory,
+                 zb_dev_rpc, ConfirmDialog,
+                 ready) {
+            ready(function() {
+                var initEnv = function() {
+                    BasicEnv.standby = new Standby({target:"mainwindow"});
+                    BasicEnv.store = new Memory({idProperty: "id"});
+                    document.body.appendChild(BasicEnv.standby.domNode);
+                    BasicEnv.standby.startup();
+                    BasicEnv.findmode = "all";
+                    BasicEnv.columns = [
+                            {label: " ",
+                                field: "watched",
+                                autoSave: true,
+                                unhidable: true,
+                                editor: "radio"
+                                },
+                            {field: "id", label: "Id", unhidable: true},
+                            {field: "nid", label: "Network Id"},
+                            {field: "device_no", label: "Type|类型"},
+                            {field: "name", label: "Name|名字"},
+                            {field: "cts", label: "Create Time|创建时间", hidden:true},
+                            {field: "remark", label: "Remark|备注", hidden: true}
+                    ];
+                    BasicEnv.search_input2_node = registry.byId("search_input2_node");
+                    doms.set(BasicEnv.search_input2_node.domNode, "display", "none");
+                    BasicEnv.search_input_node = registry.byId("search_input_node");
+                    BasicEnv.device_checkbox_node = registry.byId("device_checkbox_node");
+                    BasicEnv.dialog = new Dialog();
+                    BasicEnv.dialog.startup();
+                };
+
+                var initGrid = function() {
+                    BasicEnv.grid = new declare([Grid, Selection, Keyboard, ColumnHider, Editor])({columns: BasicEnv.columns,
+                        selectionMode: "none",
+                        cellNavigation: true,
+                        collection: BasicEnv.store,
+                        allowSelectAll: false,
+                        minRowsPerPage: 200}, "grid_node");
+                    BasicEnv.grid.startup();
+                    aspect.after(BasicEnv.grid, "renderRow", function(row, args) {
+                        return renderGridRow(row, args);
+                    });
+                };
+
+                var renderGridRow = function(row, args) {
+                    query(".field-cts", row).forEach(function(node) {
+                        SetDateCellHelper(args[0].cts, node);
+                    });
+                    return row;
+                };
+
+                var SetDateCellHelper = function(ts, cellnode) {
+                    if(rtutils.IsValidNumber(ts) && ts > 0) {
+                        cellnode.innerHTML = rtutils.Date2Str(rtutils.ts2date(ts));
+                    }
+                    else {
+                        cellnode.innerHTML = "";
+                    }
+                };
+
+                var SetTimeCellHelper = function(ts, cellnode) {
+                    if(rtutils.IsValidNumber(ts) && ts > 0) {
+                        cellnode.innerHTML = rtutils.DT2Str(rtutils.ts2date(ts));
+                    }
+                    else {
+                        cellnode.innerHTML = "";
+                    }
+                };
+
+                var device2griditem = function(device) {
+                    return {"watched": false,
+                            "id": device.id,
+                            "name": device.name || "",
+                            "nid": device.nid,
+                            "device_no": device.device_no,
+                            "cts": device.cts || 0,
+                            "remark": (device.remark || "")
+                    };
+                };
+
+                var searchData = function(searchinfo) {
+                    BasicEnv.standby.show();
+                    BasicEnv.device_checkbox_node.set("checked", false);
+                    var deferobj = rtutils.Rpc2Deferred(zb_dev_rpc.SearchDevice({"token": BasicEnv.sessionid, "arg": searchinfo}));
+                    return deferobj.then(function(result) {
+                                BasicEnv.standby.hide();
+                                var dataset = darray.map(result, function(item) {
+                                    return device2griditem(item);
+                                });
+                                if(dataset.length == 0) {
+                                    alert("found: "+dataset.length.toString()+" records");
+                                }
+                                BasicEnv.store.setData(dataset);
+                                BasicEnv.grid.refresh();
+                            }, function(err) {
+                                BasicEnv.standby.hide();
+                                console.log(err);
+                            });
+                };
+
+                var selectAll = function(is_select_all) {
+                    BasicEnv.store.forEach(function(tracker) {
+                       tracker.watched = is_select_all;
+                    });
+                    BasicEnv.grid.refresh();
+                };
+
+                initEnv();
+                initGrid();
+
+                on(BasicEnv.search_input_node, "click", function(evt) {
+                    var search_type = registry.byId("search_type_node").get("value");
+                    if(search_type == "expiry") {
+                        WdatePicker({dateFmt:'yyyy-MM-dd', lang:'en', readOnly: true});
+                    }
+                });
+
+                on(BasicEnv.search_input2_node, "click", function(evt) {
+                    var search_type = registry.byId("search_type_node").get("value");
+                    if(search_type == "expiry") {
+                        WdatePicker({dateFmt:'yyyy-MM-dd', lang:'en', readOnly: true});
+                    }
+                });
+
+                on(registry.byId("search_type_node"), "change", function(evt) {
+                    BasicEnv.search_input_node.set("value", "");
+                    BasicEnv.search_input2_node.set("value", "");
+                });
+
+                on(BasicEnv.device_checkbox_node, "change", function(evt) {
+                    selectAll(evt);
+                });
+
+                on(registry.byId("edit_btn_node"), "click", function() {
+                    var deviceids = BasicEnv.store.filter({"watched": true}).select("id").fetchSync();
+                    if(deviceids.length == 0) {
+                        alert("select entry first");
+                    }
+                    else {
+                        window.open(BasicEnv.curr_location+BasicEnv.edit_zb_device_url+"?edit_mode=edit&deviceid="+deviceids[0], "edit_zb_device");
+                    }
+                });
+
+                on(registry.byId("remove_btn_node"), "click", function() {
+                    var ids = BasicEnv.store.filter({"watched": true}).select("id").fetchSync();
+                    if(ids.length == 0) {
+                        alert("select a device first");
+                    }
+                    else {
+                        BasicEnv.standby.show();
+                        var arg = {"token": BasicEnv.sessionid,
+                                    "deviceids": ids};
+                        rtutils.Rpc2Deferred(zb_dev_rpc.RemoveDevice(arg)).then(
+                                function(result) {
+                                    BasicEnv.standby.hide();
+                                    for(var i = 0; i!==ids.length; ++i) {
+                                        BasicEnv.store.removeSync(ids[i]);
+                                    }
+                                    BasicEnv.grid.refresh();
+                                },
+                                function(err) {
+                                    BasicEnv.standby.hide();
+                                    console.log(err);
+                                }
+                        );
+                    }
+                });
+
+                on(registry.byId("reboot_btn_node"), "click", function() {
+                    var ids = BasicEnv.store.filter({"watched": true}).select("id").fetchSync();
+                    if(ids.length == 0) {
+                        alert("select a device first");
+                    }
+                    else {
+                        BasicEnv.standby.show();
+                        var arg = {"token": BasicEnv.sessionid, "deviceids": ids};
+                        rtutils.Rpc2Deferred(zb_dev_rpc.RebootDevice(arg)).then(
+                                function(result) {
+                                    BasicEnv.standby.hide();
+                                    alert(result);
+                                },
+                                function(err) {
+                                    BasicEnv.standby.hide();
+                                    console.log(err);
+                                }
+                        );
+                    }
+                });
+
+                on(registry.byId("reset_btn_node"), "click", function() {
+                    var ids = BasicEnv.store.filter({"watched": true}).select("id").fetchSync();
+                    if(ids.length == 0) {
+                        alert("select a device first");
+                    }
+                    else {
+                        BasicEnv.standby.show();
+                        rtutils.Rpc2Deferred(zb_dev_rpc.ResetDevice({"token": BasicEnv.sessionid, "deviceids": ids})).then(
+                                function(result) {
+                                    BasicEnv.standby.hide();
+                                    for(var i = 0; i!==ids.length; ++i) {
+                                        var obj = BasicEnv.store.getSync(ids[i]);
+                                        obj.nid = -1;
+                                    }
+                                    BasicEnv.grid.refresh();
+                                },
+                                function(err) {
+                                    BasicEnv.standby.hide();
+                                    console.log(err);
+                                }
+                        );
+                    }
+                });
+
+                on(registry.byId("search_btn_node"), "click", function(evt) {
+                    var search_doc = {"name": registry.byId("search_type_node").get("value")};
+                    search_doc.val = registry.byId("search_input_node").get("value");
+                    searchData(search_doc);
+                });
+
+                on(registry.byId("recap_device_btn_node"), "click", function(evt) {
+                    window.open(BasicEnv.curr_location+BasicEnv.recap_zb_device_url, "recap_zb_device_url");
+                });
+
+                on(registry.byId("log_btn_node"), "click", function() {
+                    var deviceids = BasicEnv.store.filter({"watched": true}).select("id").fetchSync();
+                    if(deviceids.length == 0) {
+                        alert("select entry first");
+                    }
+                    else {
+                        window.open(BasicEnv.curr_location+BasicEnv.op_log_url+"?deviceid="+deviceids[0], "device op log");
+                    }
+                });
+
+                on(registry.byId("err_count_btn_node"), "click", function() {
+                    window.open(BasicEnv.curr_location+BasicEnv.op_error_count_url, "device op error count");
+                });
+
+                on(registry.byId("goto_zb_module_adm_btn_node"), "click", function() {
+                    window.open(BasicEnv.curr_location+BasicEnv.zb_module_adm_url, "zb module adm");
+                });
+            });
+        });
+</script>
+</body>
+</html>

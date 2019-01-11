@@ -1,0 +1,8 @@
+{
+"version":3,
+"file":"app.js",
+"lineCount":2,
+"mappings":"A;AAAAA,MAAA,CAAO,kBAAP,CAA2B,CAC1B,aAD0B,CAA3B,CAEG,QAAQ,CAACC,CAAD,CAAS,CAUnB,MAAOA,EAVY,CAFpB;",
+"sources":["app.js.uncompressed.js"],
+"names":["define","appBase"]
+}

@@ -1,0 +1,62 @@
+.field-name {
+    text-align: center;
+    font-family: "Khmer UI";
+}
+
+.field-first_conn_time {
+    text-align: center;
+}
+
+.field-expiry {
+    text-align: center;
+    width: 6em;
+}
+
+.field-client_expiry {
+    width: 6em;
+    text-align: center;
+}
+
+.field-pay_time {
+    text-align: center;
+    width: 6em;
+}
+
+.field-simid {
+    text-align: center;
+}
+
+.field-groupid {
+    text-align: center;
+}
+
+th.field-remark {
+    text-align: center;
+}
+
+.field-remark {
+    font-family: "Khmer UI";
+}
+
+.field-timezone {
+    text-align: center;
+    width: 6em;
+}
+
+.field-id {
+    width: 9em;
+    text-align: center;
+}
+
+.field-watched {
+    width: 2em;
+}
+
+.field-protoid {
+    text-align: center;
+    width: 5em;
+}
+
+th.field-sys_remark {
+    text-align: center;
+}

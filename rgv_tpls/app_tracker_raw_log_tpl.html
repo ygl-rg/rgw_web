@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ title }}</title>
+    <meta http-equiv="content-type" content="text/html" charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+
+    <link rel="stylesheet" href="/v/jslib/dijit/themes/claro/claro.css">
+    <link rel="stylesheet" href="/v/jslib/dojo/resources/dojo.css">
+    <link rel="stylesheet" href="/v/jslib/dgrid/css/dgrid.css">
+    <link rel="stylesheet" href="/v/jslib/dgrid/css/skins/claro.css">
+    <link rel="stylesheet" href="/v/css/app.css">
+    <script src="/v/js/origin_patch.js"></script>
+    <script type="text/javascript"
+            src="/v/jslib/My9748/WdatePicker.js">
+    </script>
+    <script>
+        var dojoConfig = {
+            parseOnLoad: true, async: true,
+            packages: [
+                {"name": "shimmy", "location": location.pathname.match(/^\//) + "v/jslib/shimmy"},
+                {"name": "roundgis", "location": location.pathname.match(/^\//) + "v/js"},
+                {"name": "dgrid", "location": location.pathname.match(/^\//) + "v/jslib/dgrid"},
+                {"name": "dstore", "location": location.pathname.match(/^\//) + "v/jslib/dstore"},
+                {"name": "rgv", "location": location.pathname.match(/^\//) + "{{ app_js_dir }}"}
+            ]
+        };
+    </script>
+    <script>
+        //global env here
+        var BasicEnv = {
+            curr_location: location.pathname.match(/^\//),
+            templatePath: location.pathname.match(/^\//) + "templates",
+            rgv_template_path: location.pathname.match(/^\//) + "{{ app_template_dir }}",
+            imgpath: location.pathname.match(/^\//) + "v/imgs",
+            standby: undefined
+        };
+        BasicEnv.sessionid = "{{ sessionid }}";
+        BasicEnv.trackerid = "{{ trackerid }}";
+    </script>
+
+    <script src="/v/jslib/dojo/dojo.js"></script>
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body, #main_ui_node {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        .field-cts {
+            text-align: center;
+            width: 15%;
+        }
+
+        .field-data_no {
+            text-align: center;
+            width: 5em;
+        }
+
+        th.field-payload {
+            text-align: center;
+        }
+    </style>
+</head>
+<body class="claro" id="body_node">
+<div id="main_ui_node" class="rgz_kh_font">
+    <div style="border-color: blue; border-style: solid; border-width: 1px;">
+        <div>
+            <button data-dojo-type="dijit/form/Button"
+                    id="show_btn_node"
+                    style="margin-left: 5px;">show|显示
+            </button>
+            <select data-dojo-type="dijit/form/Select" id="count_select_node"
+                    data-dojo-props="maxHeight:-1">
+                <option value="1">1</option>
+                <option value="5" selected="selected">5</option>
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="30">30</option>
+            </select>
+            <input type="text" id="start_time_node" required="true" readonly />
+            <input type="text" id="stop_time_node" required="true" readonly />
+            <button data-dojo-type="dijit/form/Button"
+                    id="query_btn_node">search|搜索</button>
+            <label id="hint_node"></label>
+        </div>
+    </div>
+
+    <div style="margin-top: 5px;height: 88%;">
+        <div id="grid_node" style="height: 100%;"></div>
+    </div>
+</div>
+<div id="standby"></div>
+</body>
+<script>
+    require(["dojo/parser", "dojo/_base/declare", "dojo/_base/lang", "dojo/window", "dojo/on", "dojo/aspect", "dojo/query",
+                "dojo/dom", "dojo/dom-construct", "dojo/dom-class", "dojo/dom-geometry", "dojo/_base/array", "dojo/dom-style", "dojo/Deferred", "dojo/promise/all",
+                "dijit/registry", "dijit/layout/ContentPane",
+                "dijit/form/Button", "dijit/Tooltip", "dojox/timing", "dojox/collections/Set",
+                "dojox/widget/Standby",
+                "dgrid/OnDemandGrid", "dgrid/CellSelection", "dgrid/Editor", "dgrid/Keyboard", "dgrid/extensions/ColumnHider",
+                "dstore/Memory",
+                "roundgis/rtutils", "roundgis/dojo_utils",
+                "rgv/rggw_adm_rpc",
+                "rgv/multi_lang",
+                "dojo/ready"],
+            function (parser, declare, lang, dwin, on, aspect, query, dom, domc, domclass, dgeom, darray, domstyle, Deferred, all, registry,
+                      ContentPane, Button, Tooltip,
+                      dxtiming, Set, Standby, Grid, Selection, Editor, Keyboard, ColumnHider, Memory,
+                      rtutils, dojo_utils, rggw_adm_rpc, multi_lang, ready) {
+                ready(function () {
+                    var InitEnv = function () {
+                        BasicEnv.standby = new Standby({target: "main_ui_node"});
+                        document.body.appendChild(BasicEnv.standby.domNode);
+                        BasicEnv.standby.startup();
+                        BasicEnv.hint_node = dom.byId("hint_node");
+                        BasicEnv.columns = [
+                            {field: "cts", label: "Time|时间"},
+                            {field: "data_no", label: "In/Out|类型"},
+                            {field: "payload", label: "Payload|数据"}
+                        ];
+                        BasicEnv.main_store = new Memory({idProperty: "id"});
+                    };
+
+                    var InitMainGrid = function () {
+                        BasicEnv.main_grid = new declare([Grid, Editor, Selection, Keyboard])({
+                            columns: BasicEnv.columns,
+                            selectionMode: "none",
+                            cellNavigation: true,
+                            collection: BasicEnv.main_store,
+                            minRowsPerPage: 10
+                        }, "grid_node");
+                        BasicEnv.main_grid.startup();
+                    };
+
+                    var FetchAndShow = function (trackerid, count) {
+                        BasicEnv.standby.show();
+                        rtutils.Rpc2Deferred(rggw_adm_rpc.GetRecentTrackerRawLog(BasicEnv.sessionid, trackerid, count)).then(
+                                function (result) {
+                                    BasicEnv.standby.hide();
+                                    var items = darray.map(result, function (val, i) {
+                                        var entry = lang.mixin({"id": i}, val);
+                                        entry.cts = rtutils.DT2Str(rtutils.ts2date(val.cts));
+                                        entry.data_no = val.data_no || "in";
+                                        return entry;
+                                    });
+                                    RefreshGrid(items);
+                                },
+                                function (err) {
+                                    BasicEnv.standby.hide();
+                                    if (err.declaredType == "SessionExpired") {
+                                        BasicEnv.hint_node.innerHTML = "please login";
+                                    }
+                                    else {
+                                        BasicEnv.hint_node.innerHTML = err.declaredType;
+                                    }
+                                }
+                        );
+                    };
+
+                    var ShowInfo = function (evt) {
+                        BasicEnv.hint_node.innerHTML = "";
+                        var count = parseInt(registry.byId("count_select_node").get("value"), 10);
+                        FetchAndShow(BasicEnv.trackerid, count);
+                    };
+
+                    var RefreshGrid = function (dataset) {
+                        if (dataset) {
+                            BasicEnv.main_store.setData(dataset);
+                        }
+                        BasicEnv.main_grid.refresh();
+                    };
+
+                    InitEnv();
+                    InitMainGrid();
+                    on(registry.byId("show_btn_node"), "click", ShowInfo);
+
+                    on(dom.byId("start_time_node"), "click", function (evt) {
+                        WdatePicker({dateFmt: 'yyyy-MM-dd HH:mm', lang: 'en'});
+                    });
+                    on(dom.byId("stop_time_node"), "click", function (evt) {
+                        WdatePicker({dateFmt: 'yyyy-MM-dd HH:mm', lang: 'en'});
+                    });
+                    on(registry.byId("query_btn_node"), "click", function (evt) {
+                        var start_str = dom.byId("start_time_node").value;
+                        var stop_str = dom.byId("stop_time_node").value;
+                        if (start_str && stop_str) {
+                            BasicEnv.standby.show();
+                            BasicEnv.hint_node.innerHTML = "";
+                            var para = {"start_ts": rtutils.date2ts(new Date(start_str)),
+                                        "stop_ts": rtutils.date2ts(new Date(stop_str)),
+                                        "trackerid": BasicEnv.trackerid};
+                            var defer_obj = rtutils.Rpc2Deferred(rggw_adm_rpc.FindTrackerRawLog(BasicEnv.sessionid, para));
+                            defer_obj.then(
+                                    function(result) {
+                                        BasicEnv.standby.hide();
+                                        var items = darray.map(result, function (val, i) {
+                                            var entry = lang.mixin({"id": i}, val);
+                                            entry.cts = rtutils.DT2Str(rtutils.ts2date(val.cts));
+                                            entry.data_no = val.data_no || "in";
+                                            return entry;
+                                        });
+                                        RefreshGrid(items);
+                                    },
+                                    function(err) {
+                                        BasicEnv.standby.hide();
+                                        if (err.declaredType == "SessionExpired") {
+                                            BasicEnv.hint_node.innerHTML = "please login";
+                                        }
+                                        else {
+                                            BasicEnv.hint_node.innerHTML = err.declaredType;
+                                        }
+                                    }
+                            );
+                        }
+                        else {
+                            BasicEnv.hint_node.innerHTML = "start time & stop time are required";
+                        }
+                    });
+                });
+            });
+</script>
+</html>

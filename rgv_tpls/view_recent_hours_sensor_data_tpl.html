@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ title }}</title>
+    <meta http-equiv="content-type" content="text/html" charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+
+    <link rel="stylesheet" href="/jslib/dijit/themes/claro/claro.css">
+    <link rel="stylesheet" href="/jslib/dojo/resources/dojo.css">
+    <link rel="stylesheet" href="/jslib/dgrid/css/dgrid.css">
+    <link rel="stylesheet" href="/jslib/dgrid/css/skins/claro.css">
+    <link rel="stylesheet" href="/css/app.css">
+    <script src="/js/origin_patch.js"></script>
+    <script type="text/javascript"
+            src="/jslib/My9748/WdatePicker.js">
+    </script>
+    <script>
+        var dojoConfig = {
+            parseOnLoad: true, async: true,
+            gfxRenderer: "vml,silverlight,svg",
+            packages: [
+                {"name": "shimmy", "location": location.pathname.match(/^\//) + "jslib/shimmy"},
+                {"name": "roundgis", "location": location.pathname.match(/^\//) + "js"},
+                {"name": "dgrid", "location": location.pathname.match(/^\//) + "jslib/dgrid"},
+                {"name": "dstore", "location": location.pathname.match(/^\//) + "jslib/dstore"},
+                {"name": "rgyabby", "location": location.pathname.match(/^\//) + "{{ app_js_dir }}"}
+            ]
+        };
+    </script>
+    <script>
+        //global env here
+
+        var BasicEnv = {
+            curr_location: location.pathname.match(/^\//),
+            templatePath: location.pathname.match(/^\//) + "templates",
+            rgy_template_path: location.pathname.match(/^\//) + "{{ app_template_dir }}",
+            imgpath: location.pathname.match(/^\//) + "imgs",
+            standby: undefined,
+            main_grid: undefined,
+            poll_timer: undefined
+        };
+        BasicEnv.user_lang = "{{ user_lang }}";
+        BasicEnv.sessionid = "{{ sessionid }}";
+        BasicEnv.sensorid = "{{ sensorid }}";
+        BasicEnv.sensor_tbl = {};
+    </script>
+
+    <script src="/jslib/dojo/dojo.js"></script>
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body, #main_ui_node {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+<body class="claro" id="body_node">
+<div id="main_ui_node">
+    <div>
+        <label style="font-size: medium">{{ sensor_name }}</label>
+        <select data-dojo-type="dijit/form/Select"
+                id="hours_select_node">
+            {% for idx, tbl in enumerate(hours_tbls) %}
+                {% set selected_str = "selected" if idx == 0 else "" %}
+                    <option value="{{ tbl['value'] }}" selected="{{ selected_str }}">{{ tbl['label'] }}</option>
+                {% end %}
+        </select>
+        <button data-dojo-type="dijit/form/Button"
+                id="query_btn_node">{{ refresh_btn_label }}
+        </button>
+    </div>
+
+    <div style="width: 99%; height: 80%;"
+         id="chart_node"></div>
+</div>
+<div id="standby"></div>
+</body>
+<script>
+    require(["dojo/parser", "dojo/_base/declare", "dojo/_base/lang", "dojo/window", "dojo/on", "dojo/aspect", "dojo/query",
+                "dojo/dom", "dojo/date", "dojo/dom-construct", "dojo/dom-class", "dojo/dom-geometry", "dojo/_base/array", "dojo/dom-style", "dojo/Deferred", "dojo/promise/all",
+                "dijit/registry", "dijit/Dialog", "dijit/layout/BorderContainer", "dijit/layout/TabContainer", "dijit/layout/ContentPane",
+                "dijit/form/Button", "dijit/Tooltip", "dojox/timing", "dojox/collections/Set",
+                "dojox/widget/Standby", "dojox/charting/Chart", "dojox/charting/themes/Claro",
+                "dojox/charting/plot2d/Columns", "dojox/charting/action2d/Tooltip",
+                "dojox/charting/plot2d/Markers", "dojox/charting/axis2d/Default", "dojo/fx/easing",
+                "dgrid/OnDemandGrid", "dgrid/CellSelection", "dgrid/Editor",
+                "dgrid/extensions/ColumnHider", "dgrid/Keyboard",
+                "dstore/Memory",
+                "roundgis/rtutils", "roundgis/dojo_utils", "rgyabby/agri_rpc",
+                "rgyabby/multi_lang",
+                "dojo/ready"],
+            function (parser, declare, lang, dwin, on, aspect, query, dom, dojo_date, domc, domclass, dgeom, darray, domstyle, Deferred, all, registry,
+                      Dialog, BorderContainer, TabContainer, ContentPane, Button, Tooltip,
+                      dxtiming, Set, Standby, Chart, Claro, Columns, ChartTooltip, ChartMarkers,
+                      ChartDefault, ChartEasing,
+                      Grid, Selection, Editor, ColumnHider, Keyboard, Memory,
+                      rtutils, dojo_utils, agri_rpc,
+                      multi_lang, ready) {
+                ready(function () {
+                    var InitEnv = function () {
+                        BasicEnv.standby = new Standby({target: "main_ui_node"});
+                        document.body.appendChild(BasicEnv.standby.domNode);
+                        BasicEnv.standby.startup();
+                        BasicEnv.hint_node = dom.byId("hint_node");
+                        BasicEnv.chart_obj = new Chart("chart_node");
+                        BasicEnv.chart_obj.setTheme(Claro);
+                        BasicEnv.chart_obj.addPlot("default", {
+                            "type": "Columns",
+                            markers: true,
+                            gap: 2,
+                            animate: {duration: 500, easing: ChartEasing.linear},
+                            maxBarSize: 30
+                        });
+                    };
+
+                    var UpdateChart = function (hours_log_tbl) {
+                        var GetXLabelTextFunc = function(dt_obj1, dt_obj2) {
+                            //return dt_obj1.getDate().toString()+" "+rtutils.pad2(dt_obj1.getHours())+"-"+rtutils.pad2(dt_obj2.getHours());
+                            return dt_obj1.getDate().toString()+" "+rtutils.pad2(dt_obj1.getHours());
+                        };
+                        ClearChart();
+                        if (lang.isArray(hours_log_tbl[BasicEnv.sensorid])) {
+                            var sensor_data_arrary = hours_log_tbl[BasicEnv.sensorid];
+                            var seriesdata = darray.map(sensor_data_arrary, function (item, i) {
+                                return {"x": i, "y": item.avg_val};
+                            });
+                            var xlabels = darray.map(sensor_data_arrary, function (item, i) {
+                                var dt_obj = rtutils.ts2date(item.cts);
+                                //var next_dt_obj = dojo_date.add(dt_obj, 'hour', 1);
+                                return {"value": i, "text": GetXLabelTextFunc(dt_obj)};
+                            });
+                            BasicEnv.chart_obj.addAxis('x',
+                                {"labels": xlabels, "htmlLabels": false, majorTickStep: 4,
+                                "natural": true, "fixed": true});
+
+                            BasicEnv.chart_obj.addAxis('y', {
+                                "vertical": true, "htmlLabels": false,
+                                fixLower: "minor", fixUpper: "major", includeZero: true
+                            });
+                            BasicEnv.chart_obj.addSeries("bar chart", seriesdata);
+                            var tip = new ChartTooltip(BasicEnv.chart_obj, "default", {
+                                "text": function (val) {
+                                    var precision = rtutils.IsValidNumber(BasicEnv.sensor_tbl[BasicEnv.sensorid].val_precision)?BasicEnv.sensor_tbl[BasicEnv.sensorid].val_precision:1;
+                                    return xlabels[val.index].text + "<br>" + val.y.toFixed(precision)+(BasicEnv.sensor_tbl[BasicEnv.sensorid].val_unit || "");
+                                }
+                            });
+                        }
+                        else {
+                        }
+                        BasicEnv.chart_obj.render();
+                    };
+
+                    var ClearChart = function () {
+                        BasicEnv.chart_obj.removeAxis("x");
+                        BasicEnv.chart_obj.removeAxis("y");
+                        BasicEnv.chart_obj.removeSeries("bar chart");
+                    };
+
+                    var SyncLog = function () {
+                        rtutils.ShowStandby(BasicEnv.standby);
+                        return rtutils.rpc2deferred(agri_rpc.FindSensorRecentHourAvgLog(BasicEnv.sessionid, {
+                            "sensorids": [BasicEnv.sensorid],
+                            "ts": rtutils.date2ts(new Date()),
+                            "hours": parseInt(registry.byId("hours_select_node").get("value"))
+                        })).then(
+                                function (result) {
+                                    rtutils.HideStandby(BasicEnv.standby);
+                                    if (lang.isObject(result.log_tbl)) {
+                                        BasicEnv.sensor_tbl = result.sensor_tbl;
+                                        UpdateChart(result.log_tbl);
+                                    }
+                                    else {
+                                        ClearChart();
+                                    }
+                                },
+                                function (err) {
+                                    rtutils.HideStandby();
+                                    rtutils.ReloadWhenExpired(err);
+                                    console.log(err);
+                                }
+                        );
+                    };
+
+                    var initMgrs = function () {
+                        BasicEnv.poll_timer = new dxtiming.Timer(5 * 60 * 1000); //5 minutes
+                        BasicEnv.poll_timer.onTick = function () {
+                            SyncLog();
+                        };
+                    };
+
+                    var RefreshApp = function () {
+                        BasicEnv.standby.show();
+                        SyncLog().then(
+                                function (flag) {
+                                    BasicEnv.standby.hide();
+                                    BasicEnv.poll_timer.start();
+                                },
+                                function (err) {
+                                    BasicEnv.standby.hide();
+                                    console.log(err);
+                                }
+                        );
+                    };
+
+                    var AfterLogin = function () {
+                        initMgrs();
+                        setTimeout(function () {
+                            RefreshApp();
+                        }, 1000);
+                    };
+                    InitEnv();
+                    AfterLogin();
+
+                    on(registry.byId("query_btn_node"), "click", function(evt) {
+                        SyncLog();
+                    });
+                });
+            });
+</script>
+</html>

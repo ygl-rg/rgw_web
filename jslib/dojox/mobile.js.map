@@ -1,0 +1,8 @@
+{
+"version":3,
+"file":"mobile.js",
+"lineCount":2,
+"mappings":"A;AAAAA,MAAA,CAAO,cAAP,CAAuB,CACtB,GADsB,CAEtB,iBAFsB,CAGtB,oBAHsB,CAAvB,CAIG,QAAQ,CAACC,CAAD,CAAQC,CAAR,CAAcC,CAAd,CAAmB,CAC7BD,CAAAE,UAAA,CAAe,QAAf,CAAyB,CAAA,CAAzB,CAA+BH,CAA/B,CAQA,OAAOA,EAAAI,OATsB,CAJ9B;",
+"sources":["mobile.js.uncompressed.js"],
+"names":["define","dojox","lang","base","getObject","mobile"]
+}

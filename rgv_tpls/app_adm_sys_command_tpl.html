@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ title }}</title>
+    <meta http-equiv="content-type" content="text/html" charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+
+    <link rel="stylesheet" href="/v/jslib/dijit/themes/claro/claro.css">
+    <link rel="stylesheet" href="/v/jslib/dgrid/css/dgrid.css">
+    <link rel="stylesheet" href="/v/jslib/dgrid/css/skins/claro.css">
+    <link rel="stylesheet" href="/v/jslib/dojo/resources/dojo.css">
+    <link rel="stylesheet" href="/v/css/app.css">
+
+    <script src="/v/js/origin_patch.js"></script>
+    <script>
+        var dojoConfig = {
+            parseOnLoad: true, async: true,
+            packages: [
+                {"name": "roundgis", "location": location.pathname.match(/^\//) + "v/js"},
+                {"name": "dgrid", "location": location.pathname.match(/^\//) + "v/jslib/dgrid" },
+                {"name": "dstore", "location": location.pathname.match(/^\//)+"v/jslib/dstore"},
+                {"name": "rgv", "location": location.pathname.match(/^\//) + "{{ app_js_dir }}"}
+            ]
+        };
+    </script>
+    <script>
+        //global env here
+        var BasicEnv = {
+            currlocation: location.pathname.match(/^\//),
+            templatePath: location.pathname.match(/^\//) + "templates",
+            rgv_template_path: location.pathname.match(/^\//) + "{{ app_template_dir }}",
+            imgpath: location.pathname.match(/^\//) + "imgs"
+        };
+        BasicEnv.searchinput = {};
+        BasicEnv.sessionid = "{{ sessionid }}";
+        BasicEnv.userid = "{{ userid }}";
+    </script>
+
+    <script src="/v/jslib/dojo/dojo.js"></script>
+
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body, #main_ui_node {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+        }
+
+        .field-watched {
+            width: 2em;
+        }
+
+        .field-name {
+            text-align: center;
+        }
+    </style>
+</head>
+<body class="claro">
+
+<div id="main_ui_node" data-dojo-type="dijit/layout/ContentPane">
+    <div>
+        <input data-dojo-type="dijit/form/TextBox" data-dojo-props="trim:true,prpercase:true"
+               type="text" id="search_input_node" required="true"
+               style="width: 6em;"/>
+        <select data-dojo-type="dijit/form/Select" id="search_type_node">
+                    <option value="deviceid" selected="selected">id</option>
+                    <option value="name">name|名字</option>
+                    <option value="group_name">group name|组名</option>
+        </select>
+        <button data-dojo-type="dijit/form/Button" id="search_btn_node">search|搜索</button>
+    </div>
+    <div id="tracker_grid_node" style="height: 45%;"></div>
+    <div style="height: 10px;"></div>
+    <div>
+        <label>command|指令: </label>
+        <input data-dojo-type="dijit/form/Textarea" style="width: 100%; height: 4em;"
+               data-dojo-props="trim:true,prpercase:true"
+               id="command_input_node"/>
+    </div>
+    <div>
+        <table style="width: 40%;">
+            <tr>
+                <td>
+                    <label>is binary|是否二进制: </label>
+                    <input id="binary_checkbox_node"
+                           data-dojo-type="dijit/form/CheckBox"/>
+                </td>
+                <td>
+                    <label>is passthrough|是否透传: </label>
+                    <input id="passthrough_checkbox_node"
+                           data-dojo-type="dijit/form/CheckBox"/>
+                </td>
+                <td>
+                    <button data-dojo-type="dijit/form/Button"
+                            id="send_btn_node">send|发送
+                    </button>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label>relay 1|继电器1</label>
+                    <input type="checkbox" data-dojo-type="dijit/form/CheckBox"
+                           id="relay1_cb_node" />
+                </td>
+                <td>
+                    <button data-dojo-type="dijit/form/Button"
+                            id="send_relay1_btn_node">send|发送
+                    </button>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label>relay 2|继电器2</label>
+                    <input type="checkbox" data-dojo-type="dijit/form/CheckBox"
+                           id="relay2_cb_node" />
+                </td>
+                <td>
+                    <button data-dojo-type="dijit/form/Button"
+                            id="send_relay2_btn_node">send|发送
+                    </button>
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div id="hint_node"></div>
+</div>
+<div id="standby"></div>
+
+<script>
+    require(["dojo/parser", "dojo/on", "dojo/dom", "dojo/dom-construct", "dojo/aspect", "dojo/query", "dojo/_base/declare", "dojo/_base/lang", "dojo/_base/array",
+                "dijit/registry", "dijit/form/Textarea", "dijit/form/CheckBox", "dijit/form/Select", "dijit/layout/TabContainer", "dijit/layout/ContentPane",
+                "dijit/form/Button", "dgrid/Editor", "dgrid/Keyboard",
+                "dojox/widget/Standby", "roundgis/rtutils",
+                "rgv/rggw_adm_rpc",
+                "dgrid/OnDemandGrid", "dgrid/CellSelection", "dstore/Memory", "dojox/collections/Dictionary",
+                "dojo/ready"],
+            function (parser, on, dom, domc, aspect, query, declare, lang, darray,
+                      registry, Textarea, CheckBox, Select, TabContainer, ContentPane,
+                      Button, Editor, Keyboard, Standby,
+                      rtutils,
+                      rggw_adm_rpc, Grid,
+                      Selection, Memory, Dictionary,
+                      ready) {
+                ready(function () {
+                    var initEnv = function () {
+                        BasicEnv.standby = new Standby({target: "main_ui_node"});
+                        BasicEnv.tracker_store = new Memory({idProperty: "deviceid"});
+                        document.body.appendChild(BasicEnv.standby.domNode);
+                        BasicEnv.standby.startup();
+                        BasicEnv.tracker_columns = [
+                            {
+                                label: " ",
+                                field: "watched",
+                                autoSave: true,
+                                editor: "radio"
+                            },
+                            {field: "id", label: "Id"},
+                            {field: "ownerid", label: "Owner|车机"},
+                            {field: "name", label: "Name|名字"}
+                        ];
+                    };
+                    BasicEnv.hint_node = dom.byId("hint_node");
+
+                    var InitTrackerGrid = function () {
+                        BasicEnv.tracker_grid = new declare([Grid, Selection, Keyboard, Editor])({
+                            columns: BasicEnv.columns,
+                            selectionMode: "single",
+                            cellNavigation: true,
+                            collection: BasicEnv.tracker_store,
+                            minRowsPerPage: 200
+                        }, "tracker_grid_node");
+                        BasicEnv.tracker_grid.startup();
+                    };
+
+                    var SetTrackerGrid = function (items) {
+                        if (!BasicEnv.tracker_grid) {
+                            InitTrackerGrid();
+                        }
+                        if (items.length > 0) {
+                            items[0].watched = true;
+                        }
+                        BasicEnv.tracker_grid.set("columns", BasicEnv.tracker_columns);
+                        BasicEnv.tracker_store.setData(items);
+                        BasicEnv.tracker_grid.refresh();
+                    };
+
+                    var SendCommand = function (para) {
+                        rtutils.ShowStandby(BasicEnv.standby);
+                        BasicEnv.hint_node.innerHTML = "";
+                        rtutils.Rpc2Deferred(rggw_adm_rpc.SendCommand(BasicEnv.sessionid, para)).then(
+                                function (result) {
+                                    rtutils.HideStandby(BasicEnv.standby);
+                                    BasicEnv.hint_node.innerHTML = "ok";
+                                },
+                                function (err) {
+                                    rtutils.HideStandby(BasicEnv.standby);
+                                    if (err.declaredType == "SessionExpired") {
+                                        BasicEnv.hint_node.innerHTML = "please login";
+                                    }
+                                    else if (err.declaredType == "NoValidTrackerConn") {
+                                        BasicEnv.hint_node.innerHTML = "tracker offline";
+                                    }
+                                    else if(err.declaredType == "NoLock") {
+                                        BasicEnv.hint_node.innerHTML = "tracker is busy, please try again later";
+                                    }
+                                    else {
+                                        BasicEnv.hint_node.innerHTML = "server error";
+                                    }
+                                }
+                        );
+                    };
+
+                    var SendRelay = function (para) {
+                        rtutils.ShowStandby(BasicEnv.standby);
+                        BasicEnv.hint_node.innerHTML = "";
+                        rtutils.Rpc2Deferred(rggw_adm_rpc.SendRelay(BasicEnv.sessionid, para)).then(
+                                function (result) {
+                                    rtutils.HideStandby(BasicEnv.standby);
+                                    BasicEnv.hint_node.innerHTML = "ok";
+                                },
+                                function (err) {
+                                    rtutils.HideStandby(BasicEnv.standby);
+                                    if (err.declaredType == "SessionExpired") {
+                                        BasicEnv.hint_node.innerHTML = "please login";
+                                    }
+                                    else if (err.declaredType == "NoValidTrackerConn") {
+                                        BasicEnv.hint_node.innerHTML = "tracker offline";
+                                    }
+                                    else if(err.declaredType == "NoLock") {
+                                        BasicEnv.hint_node.innerHTML = "tracker is busy, please try again later";
+                                    }
+                                    else {
+                                        BasicEnv.hint_node.innerHTML = "server error";
+                                    }
+                                }
+                        );
+                    };
+
+                    var SearchDevice = function(searchinfo) {
+                        BasicEnv.standby.show();
+                        var deferobj = rtutils.Rpc2Deferred(rggw_adm_rpc.SearchDevice(BasicEnv.sessionid, searchinfo));
+                        return deferobj.then(function(result) {
+                                    BasicEnv.standby.hide();
+                                    for(var i = 0; i!=result.length; ++i) {
+                                        result[i].watched = false;
+                                    }
+                                    SetTrackerGrid(result);
+                                }, function(err) {
+                                    BasicEnv.standby.hide();
+                                    console.log(err);
+                                });
+                    };
+
+                    initEnv();
+
+                    on(registry.byId("search_btn_node"), "click", function(evt) {
+                        var search_doc = {"name": registry.byId("search_type_node").get("value")};
+                        search_doc.val = registry.byId("search_input_node").get("value");
+                        SearchDevice(search_doc);
+                    });
+
+                    on(registry.byId("send_btn_node"), "click", function (evt) {
+                        var trackers = BasicEnv.tracker_store.filter({"watched": true}).fetchSync();
+                        if (trackers.length > 0) {
+                            var para = {
+                                "command": registry.byId("command_input_node").get("value"),
+                                "trackerid": trackers[0].id,
+                                "is_binary": registry.byId("binary_checkbox_node").get("checked"),
+                                "is_passthrough": registry.byId("passthrough_checkbox_node").get("checked")
+                            };
+                            SendCommand(para);
+                        }
+                        else {
+                            alert("choose tracker first");
+                        }
+                    });
+
+                    on(registry.byId("send_relay1_btn_node"), "click", function (evt) {
+                        var trackers = BasicEnv.tracker_store.filter({"watched": true}).fetchSync();
+                        if (trackers.length > 0) {
+                            var para = {
+                                "relayid": 6,
+                                "trackerid": trackers[0].id,
+                                "on_off": registry.byId("relay1_cb_node").get("checked")?1:2
+                            };
+                            SendRelay(para);
+                        }
+                        else {
+                            alert("choose tracker first");
+                        }
+                    });
+
+                    on(registry.byId("send_relay2_btn_node"), "click", function (evt) {
+                        var trackers = BasicEnv.tracker_store.filter({"watched": true}).fetchSync();
+                        if (trackers.length > 0) {
+                            var para = {
+                                "relayid": 7,
+                                "trackerid": trackers[0].id,
+                                "on_off": registry.byId("relay2_cb_node").get("checked")?1:2
+                            };
+                            SendRelay(para);
+                        }
+                        else {
+                            alert("choose tracker first");
+                        }
+                    });
+                });
+            });
+</script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+.claro .dijit_lock_btn {
+    background-image: url("/imgs/lock_btn.png");
+    background-repeat: no-repeat;
+    width: 22px;
+    height: 22px;
+}
+
+.claro .dijit_unlock_btn {
+    background-repeat: no-repeat;
+    background-image: url("/imgs/unlock_btn.png");
+    width: 22px;
+    height: 22px;
+}
+
+.claro .dijit_select_all_cars_btn {
+    background-image: url("/imgs/select_all_cars_btn.png");
+    background-repeat: no-repeat;
+    width: 22px;
+    height: 22px;
+}
+
+.claro .dijit_unselect_all_cars_btn {
+    background-image: url("/imgs/unselect_all_cars_btn.png");
+    background-repeat: no-repeat;
+    width: 22px;
+    height: 22px;
+}
+
+.claro .dijit_play_btn {
+    background-image: url("/imgs/play_btn.png");
+    background-repeat: no-repeat;
+    width: 22px;
+    height: 22px;
+}
+
+.claro .dijit_search_btn {
+    background-image: url("/imgs/search_btn.png");
+    background-repeat: no-repeat;
+    width: 22px;
+    height: 22px;
+}
+
+.claro .dijit_clear_btn {
+    background-image: url("/imgs/clear_btn.png");
+    background-repeat: no-repeat;
+    width: 22px;
+    height: 22px;
+}
+
+.claro .dijit_shutdown_power_btn {
+    background-image: url("/imgs/shutdown_power_btn.png");
+    background-repeat: no-repeat;
+    width: 22px;
+    height: 22px;
+}
+
+.claro .dijit_resume_power_btn {
+    background-image: url("/imgs/resume_power_btn.png");
+    background-repeat: no-repeat;
+    width: 22px;
+    height: 22px;
+}
+
+.claro .dijit_show_btn {
+    background-image: url("/imgs/show_btn.png");
+    background-repeat: no-repeat;
+    width: 22px;
+    height: 22px;
+}
+
+.claro .dijit_set_btn {
+    background-image: url("/imgs/set_btn.png");
+    background-repeat: no-repeat;
+    width: 22px;
+    height: 22px;
+}
+
+.claro .dijit_unset_btn {
+    background-image: url("/imgs/unset_btn.png");
+    background-repeat: no-repeat;
+    width: 22px;
+    height: 22px;
+}
+
+.claro .dijit_remove_btn {
+    background-image: url("/imgs/remove_btn.png");
+    background-repeat: no-repeat;
+    width: 22px;
+    height: 22px;
+}
+
+.claro .dijit_add_btn {
+    background-image: url("/imgs/add_btn.png");
+    background-repeat: no-repeat;
+    width: 22px;
+    height: 22px;
+}
+
+.claro .dijit_export_btn {
+    background-image: url("/imgs/export_btn.png");
+    background-repeat: no-repeat;
+    width: 22px;
+    height: 22px;
+}
+
+.claro .dijit_export_kml_btn {
+    background-image: url("/imgs/export_kml_btn.png");
+    background-repeat: no-repeat;
+    width: 22px;
+    height: 22px;
+}
+
+.claro .dijit_trace_search_grid_play_btn {
+    background-image: url("/imgs/trace_search_grid_play_btn.png");
+    background-repeat: no-repeat;
+    width: 22px;
+    height: 22px;
+}
+
+.claro .dijit_trace_search_map_clear_btn {
+    background-image: url("/imgs/trace_search_map_clear_btn.png");
+    background-repeat: no-repeat;
+    width: 22px;
+    height: 22px;
+}
+
+.claro .dijit_trace_search_map_play_btn {
+    background-image: url("/imgs/trace_search_map_play_btn.png");
+    background-repeat: no-repeat;
+    width: 22px;
+    height: 22px;
+}
+
+.claro .dijit_trace_search_map_pause_btn {
+    background-image: url("/imgs/trace_search_map_pause_btn.png");
+    background-repeat: no-repeat;
+    width: 22px;
+    height: 22px;
+}
+
+.claro .dijit_set_tracker_names_btn {
+    background-image: url("/imgs/set_tracker_names_btn.png");
+    background-repeat: no-repeat;
+    width: 22px;
+    height: 22px;
+}
+
+.claro .dijit_change_pwd_btn {
+    background-image: url("/imgs/change_pwd_btn.png");
+    background-repeat: no-repeat;
+    width: 22px;
+    height: 22px;
+}
+
+.claro .dijit_set_mobile_no_btn {
+    background-image: url("/imgs/set_mobile_no_btn.png");
+    background-repeat: no-repeat;
+    width: 22px;
+    height: 22px;
+}
+
+.claro .dijit_unset_mobile_no_btn {
+    background-image: url("/imgs/unset_mobile_no_btn.png");
+    background-repeat: no-repeat;
+    width: 22px;
+    height: 22px;
+}
+
+.claro .dijit_start_shooting_btn {
+    background-image: url("/imgs/tab_icon_shooting.png");
+    background-repeat: no-repeat;
+    width: 25px;
+    height: 25px;
+}

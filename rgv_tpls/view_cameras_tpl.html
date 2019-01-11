@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ title }}</title>
+    <meta http-equiv="content-type" content="text/html" charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+
+    <link rel="stylesheet" href="/v/jslib/dojo/resources/dojo.css">
+    <link rel="stylesheet" href="/v/jslib/dgrid/css/dgrid.css">
+    <link rel="stylesheet" href="/v/jslib/dgrid/css/skins/claro.css">
+    <link rel="stylesheet" href="/v/jslib/dijit/themes/claro/claro.css">
+    <link rel="stylesheet" href="/v/css/app.css">
+    <link rel="stylesheet" href="/{{ app_css_dir }}/dijit_btns.css">
+    <script>
+        var dojoConfig= { parseOnLoad: true, async: true,
+            packages: [
+                {"name": "roundgis", "location": location.pathname.match(/^\//) + "v/js"},
+                {"name": "dgrid", "location": location.pathname.match(/^\//) + "v/jslib/dgrid" },
+                {"name": "dstore", "location": location.pathname.match(/^\//)+"v/jslib/dstore"},
+                {"name": "rgv", "location": location.pathname.match(/^\//) + "{{ app_js_dir }}"}
+            ]
+        };
+    </script>
+    <script>
+        //global env here
+        var BasicEnv = {templatePath: location.pathname.match(/^\//) + "templates",
+                        rgv_template_path: location.pathname.match(/^\//) + "{{ app_template_dir }}",
+             dialog: undefined};
+        BasicEnv.sessionid = "{{ sessionid }}";
+        BasicEnv.lang = "{{ user_lang }}";
+        BasicEnv.curr_location = location.pathname.match(/^\//);
+        BasicEnv.edit_camera_url = "{{ view_edit_camera_url }}";
+    </script>
+
+    <script src="/v/jslib/dojo/dojo.js"></script>
+
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        html,body,#main_window {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+        }
+
+        .field-watched {
+            width: 10%;
+        }
+    </style>
+</head>
+<body class="claro" id="body_node">
+<div id="main_window" class="rgy_kh_font" data-dojo-type="dijit/layout/BorderContainer" data-dojo-props="design:'headline',gutters:false">
+    <div data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'top'">
+        <div>
+            <button data-dojo-type="dijit/form/Button" id="search_btn_node">{{ search_label }}</button>
+            <button data-dojo-type="dijit/form/Button" id="add_btn_node">{{ add_label }}</button>
+            <button data-dojo-type="dijit/form/Button" id="remove_btn_node">{{ remove_label }}</button>
+            <button data-dojo-type="dijit/form/Button" id="goto_btn_node">{{ goto_label }}</button>
+        </div>
+    </div>
+    <div
+         data-dojo-type="dijit/layout/ContentPane"
+         data-dojo-props="region:'center'">
+        <div id="grid_node" style="height:97%;"></div>
+    </div>
+</div>
+<div id="standby"></div>
+<script>
+require(["dojo/parser", "dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-style", "dojo/aspect", "dojo/query", "dojo/_base/declare",
+         "dojo/_base/lang", "dojo/_base/array",
+         "dijit/registry","dijit/Dialog", "dijit/form/Select", "dijit/form/TextBox", "dijit/form/ValidationTextBox",
+         "dijit/form/Textarea", "dijit/form/CheckBox", "dgrid/Editor", "dgrid/Keyboard",
+         "dgrid/extensions/ColumnHider",
+         "dojox/widget/Standby",  "roundgis/rtutils", "roundgis/dojo_utils",
+         "dgrid/OnDemandGrid", "dgrid/Selection","dstore/Memory",
+         "rgv/camera_rpc", "rgv/ConfirmDialog",
+         "dojo/ready"],
+        function(parser, on, dom, domc, doms, aspect, query, declare, lang, darray, registry, Dialog, Select, TextBox, ValidationTextBox,
+                 Textarea, CheckBox, Editor, Keyboard, ColumnHider, Standby,
+                 rtutils, dojo_utils, Grid,  Selection, Memory,
+                 camera_rpc, ConfirmDialog,
+                 ready) {
+            ready(function() {
+                var initEnv = function() {
+                    BasicEnv.standby = new Standby({target:"main_window"});
+                    BasicEnv.store = new Memory({idProperty: "id"});
+                    document.body.appendChild(BasicEnv.standby.domNode);
+                    BasicEnv.standby.startup();
+
+                    BasicEnv.column_tbl = {
+                            "eng": [
+                                {field: "watched", autoSave: true, unhidable: true,
+                                    label: " ",
+                                    editor: "radio"},
+                                {field: "name", label: "Name"},
+                                {field: "url", label: "URL"}
+                            ],
+                            "zho": [
+                                {field: "watched", autoSave: true, unhidable: true,
+                                    label: " ",
+                                    editor: "radio"},
+                                {field: "name", label: "名字"},
+                                {field: "url", label: "URL"}
+                            ]
+                        };
+
+                    BasicEnv.refresh_confirm_dialog = new ConfirmDialog({
+                                                         onExecute: function() {
+                                                             loadData(undefined);
+                                                         },
+                                                         onCancel: function() {}
+                                                        });
+                    BasicEnv.refresh_confirm_dialog.startup();
+                    BasicEnv.dialog = new Dialog();
+                    BasicEnv.dialog.startup();
+                };
+
+                var initGrid = function() {
+                    BasicEnv.grid = new declare([Grid, Selection, Keyboard, ColumnHider, Editor])(
+                        {
+                            columns: rtutils.GetLangField(BasicEnv.column_tbl, BasicEnv.lang),
+                            selectionMode: "none",
+                            cellNavigation: true,
+                            collection: BasicEnv.store,
+                            allowSelectAll: false,
+                            minRowsPerPage: 200}, "grid_node");
+                    BasicEnv.grid.startup();
+                    aspect.after(BasicEnv.grid, "renderRow", function(row, args) {
+                        return renderGridRow(row, args);
+                    });
+                };
+
+                var renderGridRow = function(row, args) {
+                    return row;
+                };
+
+                var ToGridItem = function(mdl) {
+                    return {
+                            "watched": false,
+                            "id": mdl.id,
+                            "name": mdl.name,
+                            "url": mdl.url
+                    };
+                };
+
+                var Search = function() {
+                    BasicEnv.standby.show();
+                    var para = {"name": "name", "val": ""};
+                    var deferobj = rtutils.Rpc2Deferred(camera_rpc.SearchCamera(BasicEnv.sessionid, para));
+                    return deferobj.then(function(result) {
+                                BasicEnv.standby.hide();
+                                var dataset = darray.map(result, function(item) {
+                                    return ToGridItem(item);
+                                });
+                                BasicEnv.store.setData(dataset);
+                                BasicEnv.grid.refresh();
+                            }, function(err) {
+                                BasicEnv.standby.hide();
+                                console.log(err);
+                            });
+                };
+
+                var Remove = function() {
+                    var ids = BasicEnv.store.filter({"watched": true}).select("id").fetchSync();
+                    if(ids.length > 0) {
+                        BasicEnv.standby.show();
+                        var defer_obj = rtutils.Rpc2Deferred(camera_rpc.RemoveCamera(BasicEnv.sessionid, ids));
+                        defer_obj.then(
+                            function(result) {
+                                BasicEnv.standby.hide();
+                                for(var i = 0; i!=ids.length; ++i) {
+                                    BasicEnv.store.removeSync(ids[i]);
+                                }
+                                BasicEnv.grid.refresh();
+                            }, function(error) {
+                                BasicEnv.standby.hide();
+                                console.log(error);
+                                }
+                        );
+                    }
+                };
+
+                var GotoApp = function() {
+                    var rows = BasicEnv.store.filter({"watched": true}).fetchSync();
+                    if(rows.length > 0) {
+                        var row = rows[0];
+                        window.open(row.url, row.url);
+                    }
+                };
+
+                initEnv();
+                initGrid();
+
+                on(registry.byId("goto_btn_node"), "click", function() {
+                    GotoApp();
+                });
+
+                on(registry.byId("search_btn_node"), "click", function() {
+                    Search();
+                });
+
+                on(registry.byId("remove_btn_node"), "click", function() {
+                    Remove();
+                });
+
+                on(registry.byId("add_btn_node"), "click", function() {
+                    window.open(BasicEnv.curr_location+BasicEnv.edit_camera_url, BasicEnv.edit_camera_url);
+                });
+            });
+        });
+</script>
+</body>
+</html>

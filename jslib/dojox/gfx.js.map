@@ -1,0 +1,8 @@
+{
+"version":3,
+"file":"gfx.js",
+"lineCount":2,
+"mappings":"A;AAAAA,MAAA,CAAO,WAAP,CAAoB,CAAC,iBAAD,CAAoB,aAApB,CAAmC,iBAAnC,CAApB,CACE,QAAQ,CAACC,CAAD,CAAOC,CAAP,CAAgBC,CAAhB,CAAyB,CAKlCD,CAAAE,SAAA,CAAiBD,CAAjB,CACA,OAAOD,EAN2B,CADnC;",
+"sources":["gfx.js.uncompressed.js"],
+"names":["define","lang","gfxBase","renderer","switchTo"]
+}

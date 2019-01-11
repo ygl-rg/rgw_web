@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ title }}</title>
+    <meta http-equiv="content-type" content="text/html" charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+
+    <link rel="stylesheet" href="/v/jslib/dojo/resources/dojo.css">
+    <link rel="stylesheet" href="/v/jslib/dijit/themes/claro/claro.css">
+    <link rel="stylesheet" href="/v/css/app.css">
+    <script>
+        var dojoConfig = {
+            parseOnLoad: true, async: true,
+            packages: [
+                {"name": "roundgis", "location": location.pathname.match(/^\//) + "v/js"},
+                {"name": "dgrid", "location": location.pathname.match(/^\//) + "v/jslib/dgrid"},
+                {"name": "dstore", "location": location.pathname.match(/^\//) + "v/jslib/dstore"},
+                {"name": "rgv", "location": location.pathname.match(/^\//) + "{{ app_js_dir }}"}
+            ]
+        };
+    </script>
+    <script>
+        //global env here
+        var BasicEnv = {
+            templatePath: location.pathname.match(/^\//) + "templates",
+            rgv_template_path: location.pathname.match(/^\//) + "{{ app_template_dir }}"
+        };
+        BasicEnv.sessionid = "{{ sessionid }}";
+    </script>
+
+    <script src="/v/jslib/dojo/dojo.js"></script>
+
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body, #main_window {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+        }
+    </style>
+</head>
+<body class="claro" id="body_node">
+<div id="main_window" class="rgz_kh_font">
+    <br><br>
+    <table style="margin: 0 auto;">
+        <tr>
+            <td>timezone:</td>
+            <td>
+                <select data-dojo-type="dijit/form/Select"
+                        id="tz_select_node">
+                    {% for idx, tz_option in enumerate(tz_options) %}
+                        {% if idx == 0 %}
+                            <option value="{{ tz_option["value"] }}" selected="selected">{{ tz_option["label"] }}</option>
+                        {% else %}
+                            <option value="{{ tz_option["value"] }}">{{ tz_option["label"] }}</option>
+                        {% end %}
+                    {% end %}
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <button data-dojo-type="dijit/form/Button"
+                        id="ok_btn_node">ok
+                </button>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <label id="hint_node"></label>
+            </td>
+        </tr>
+    </table>
+</div>
+<div id="standby"></div>
+
+<script>
+    require(["dojo/parser", "dojo/on", "dojo/dom", "dojo/dom-construct", "dojo/dom-style", "dojo/aspect", "dojo/query", "dojo/_base/declare",
+             "dojo/_base/lang", "dojo/_base/array",
+             "dijit/registry", "dijit/form/Select", "dijit/form/TextBox", "dijit/form/ValidationTextBox",
+             "dijit/form/Textarea", "dijit/form/CheckBox", "dijit/form/Button",
+             "dojox/widget/Standby", "roundgis/rtutils",
+             "dojox/validate", "rgv/sys_cfg_rpc",
+             "dojo/ready"],
+            function (parser, on, dom, domc, doms, aspect, query, declare, lang, darray, registry, Select, TextBox, ValidationTextBox,
+                      Textarea, CheckBox, Button, Standby,
+                      rtutils, dx_validate,
+                      sys_cfg_rpc,
+                      ready) {
+                ready(function () {
+                    var initEnv = function () {
+                        BasicEnv.standby = new Standby({target: "main_window"});
+                        document.body.appendChild(BasicEnv.standby.domNode);
+                        BasicEnv.standby.startup();
+                    };
+
+                    var AfterInit = function () {
+                        GetCfg();
+                    };
+
+                    var GetCfg = function () {
+                        BasicEnv.standby.show();
+                        rtutils.Rpc2Deferred(sys_cfg_rpc.GetCfg({"token": BasicEnv.sessionid})).then(
+                                function (result) {
+                                    BasicEnv.standby.hide();
+                                    SetUI(result);
+                                },
+                                function (err) {
+                                    BasicEnv.standby.hide();
+                                    rtutils.ReloadWhenExpired(err);
+                                    console.log(err);
+                                    SetHint("server error");
+                                }
+                        );
+                    };
+
+
+                    var SetHint = function (hint) {
+                        dom.byId("hint_node").innerHTML = hint;
+                    };
+
+                    var SetUI = function (mdl) {
+                        if(mdl) {
+                            registry.byId("tz_select_node").set("value", mdl.timezone || "UTC");
+                        }
+                    };
+
+                    var MakeModel = function () {
+                        var data = {};
+                        data.timezone = registry.byId("tz_select_node").get("value");
+                        return data;
+                    };
+
+                    var SetCfg = function (mdl) {
+                        BasicEnv.standby.show();
+                        var deferobj = rtutils.Rpc2Deferred(sys_cfg_rpc.SetCfg({"token": BasicEnv.sessionid,
+                                                                                "cfg": mdl}));
+                        deferobj.then(
+                                function (result) {
+                                    rtutils.HideStandby(BasicEnv.standby, "main_window");
+                                    SetHint("ok");
+                                },
+                                function (err) {
+                                    rtutils.ReloadWhenExpired(err);
+                                    rtutils.HideStandby(BasicEnv.standby, "main_window");
+                                    SetHint(err.declaredType);
+                                }
+                        );
+                    };
+
+                    initEnv();
+                    AfterInit();
+
+                    on(registry.byId("ok_btn_node"), "click", function (evt) {
+                        var rec = MakeModel();
+                        SetCfg(rec);
+                    });
+                });
+            });
+</script>
+</body>
+</html>

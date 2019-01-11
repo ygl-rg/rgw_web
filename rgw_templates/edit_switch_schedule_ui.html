@@ -1,0 +1,56 @@
+<div>
+    <div>
+        <table>
+            <tr>
+                <td><label data-dojo-attach-point="start_time_label">start date </label></td>
+                <td><input data-dojo-type="dijit/form/TextBox"
+                           data-dojo-props="trim:true,prpercase:true" type="text" style="width:8em;"
+                           data-dojo-attach-point="start_time_input_node" readonly />
+                    <img data-dojo-attach-point="start_time_img_node" src="/jslib/My9748/skin/datePicker.gif" width="16" height="22"
+                         align="absmiddle" />
+                </td>
+            </tr>
+            <tr>
+                <td><label data-dojo-attach-point="stop_time_label">stop date </label></td>
+                <td><input data-dojo-type="dijit/form/TextBox"
+                           data-dojo-props="trim:true,prpercase:true" type="text" style="width:8em;"
+                           data-dojo-attach-point="stop_time_input_node" readonly />
+                    <img data-dojo-attach-point="stop_time_img_node" src="/jslib/My9748/skin/datePicker.gif" width="16" height="22"
+                         align="absmiddle" />
+                </td>
+            </tr>
+            <tr>
+                <td><label data-dojo-attach-point="hour_minute_label">hour:minute </label></td>
+                <td><input data-dojo-type="dijit/form/TextBox"
+                           data-dojo-props="trim:true,prpercase:true" type="text" style="width:8em;"
+                           data-dojo-attach-point="hh_mm_input_node" readonly />
+                    <img data-dojo-attach-point="hh_mm_img_node" src="/jslib/My9748/skin/datePicker.gif" width="16" height="22"
+                         align="absmiddle" />
+                </td>
+            </tr>
+            <tr>
+                <td><label data-dojo-attach-point="working_duration_label">working duration </label></td>
+                <td><input data-dojo-type="dijit/form/TextBox"
+                           data-dojo-props="trim:true,prpercase:true"
+                           data-dojo-attach-point="mins_input_node"
+                           type="text"
+                           style="width: 3em;" />
+                    <label data-dojo-attach-point="mins_label"> mins</label>
+                    <input data-dojo-type="dijit/form/TextBox"
+                           data-dojo-props="trim:true,prpercase:true"
+                           data-dojo-attach-point="secs_input_node"
+                           type="text"
+                           style="width: 3em;" />
+                    <label data-dojo-attach-point="secs_label"> secs</label>
+                </td>
+            </tr>
+            <tr>
+                <td><button data-dojo-type="dijit/form/Button"
+                            data-dojo-attach-point="ok_btn_node">ok</button></td>
+            </tr>
+        </table>
+    </div>
+    <div>
+        <label data-dojo-attach-point="hint_node"></label>
+    </div>
+</div>

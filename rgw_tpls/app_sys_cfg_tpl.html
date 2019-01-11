@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ title }}</title>
+    <meta http-equiv="content-type" content="text/html" charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+
+    <link rel="stylesheet" href="/jslib/dojo/resources/dojo.css">
+    <link rel="stylesheet" href="/jslib/dijit/themes/claro/claro.css">
+    <link rel="stylesheet" href="/css/app.css">
+    <script>
+        var dojoConfig = {
+            parseOnLoad: true, async: true,
+            packages: [
+                {"name": "roundgis", "location": location.pathname.match(/^\//) + "js"},
+                {"name": "dgrid", "location": location.pathname.match(/^\//) + "jslib/dgrid"},
+                {"name": "dstore", "location": location.pathname.match(/^\//) + "jslib/dstore"},
+                {"name": "rgw", "location": location.pathname.match(/^\//) + "{{ app_js_dir }}"}
+            ]
+        };
+    </script>
+    <script>
+        //global env here
+        var BasicEnv = {
+            templatePath: location.pathname.match(/^\//) + "templates",
+            rgw_template_path: location.pathname.match(/^\//) + "{{ app_template_dir }}"
+        };
+        BasicEnv.sessionid = "{{ sessionid }}";
+    </script>
+
+    <script src="/jslib/dojo/dojo.js"></script>
+
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body, #main_window {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+        }
+    </style>
+</head>
+<body class="claro" id="body_node">
+<div id="main_window" class="rgz_kh_font">
+    <br><br>
+    <table style="margin: 0 auto;">
+        <tr>
+            <td>timezone:</td>
+            <td>
+                <select data-dojo-type="dijit/form/Select"
+                        id="tz_select_node">
+                    {% for idx, tz_option in enumerate(tz_options) %}
+                        {% if idx == 0 %}
+                            <option value="{{ tz_option["value"] }}" selected="selected">{{ tz_option["label"] }}</option>
+                        {% else %}
+                            <option value="{{ tz_option["value"] }}">{{ tz_option["label"] }}</option>
+                        {% end %}
+                    {% end %}
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td>pagekite frontend:</td>
+            <td>
+                <input data-dojo-type="dijit/form/ValidationTextBox"
+                       data-dojo-props="trim:true, prpercase:true"
+                       id="pagekite_frontend_input_node"
+                       type="text" required="true"
+                       style="width: 20em;"/>
+            </td>
+        </tr>
+        <tr>
+            <td>domain:</td>
+            <td>
+                <input data-dojo-type="dijit/form/ValidationTextBox"
+                       data-dojo-props="trim:true, prpercase:true"
+                       id="domain_input_node"
+                       type="text" required="true"
+                       style="width: 20em;"/>
+            </td>
+        </tr>
+        <tr>
+            <td>pagekite pwd:</td>
+            <td>
+                <input data-dojo-type="dijit/form/ValidationTextBox"
+                       data-dojo-props="trim:true, prpercase:true"
+                       id="pagekite_pwd_input_node"
+                       type="text" required="true"
+                       style="width: 10em;"/>
+            </td>
+        </tr>
+        <tr>
+            <td>polling interval:</td>
+            <td>
+                <input data-dojo-type="dijit/form/ValidationTextBox"
+                       data-dojo-props="trim:true, prpercase:true"
+                       id="polling_interval_input_node"
+                       type="text" required="true"
+                       style="width: 10em;"/>
+            </td>
+        </tr>
+        <tr>
+            <td>rx gateway url:</td>
+            <td>
+                <input data-dojo-type="dijit/form/ValidationTextBox"
+                       data-dojo-props="trim:true, prpercase:true"
+                       id="gw_url_input_node"
+                       type="text" required="true"
+                       style="width: 20em;"/>
+            </td>
+        </tr>
+        <tr>
+            <td>rx gateway pwd:</td>
+            <td>
+                <input data-dojo-type="dijit/form/ValidationTextBox"
+                       data-dojo-props="trim:true, prpercase:true"
+                       id="gw_pwd_input_node"
+                       type="text" required="true"
+                       style="width: 10em;"/>
+            </td>
+        </tr>
+        <tr>
+            <td>password|密码:</td>
+            <td>
+                <input data-dojo-type="dijit/form/ValidationTextBox"
+                       data-dojo-props="trim:true, prpercase:true"
+                       id="pwd_input_node"
+                       type="text" required="true"
+                       style="width: 10em;"/>
+            </td>
+        </tr>
+        <tr>
+            <td>email sender:</td>
+            <td>
+                <input data-dojo-type="dijit/form/ValidationTextBox"
+                       data-dojo-props="trim:true, prpercase:true"
+                       id="email_sender_input_node"
+                       type="text"
+                       style="width: 20em;"/>
+            </td>
+        </tr>
+        <tr>
+            <td>elasticemail api key:</td>
+            <td>
+                <input data-dojo-type="dijit/form/ValidationTextBox"
+                       data-dojo-props="trim:true, prpercase:true"
+                       id="elasticemail_api_key_input_node"
+                       type="text"
+                       style="width: 20em;"/>
+            </td>
+        </tr>
+        <tr>
+            <td>elasticemail send url:</td>
+            <td>
+                <input data-dojo-type="dijit/form/ValidationTextBox"
+                       data-dojo-props="trim:true, prpercase:true"
+                       id="elasticemail_send_url_input_node"
+                       type="text"
+                       style="width: 26em;"/>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <button data-dojo-type="dijit/form/Button"
+                        id="ok_btn_node">ok
+                </button>
+            </td>
+            <td>
+                <button data-dojo-type="dijit/form/Button"
+                        id="register_dev_btn_node">register device
+                </button>
+            </td>
+            <td>
+                <button data-dojo-type="dijit/form/Button"
+                        id="sync_dev_btn_node">sync device
+                </button>
+            </td>
+            <td>
+                <button data-dojo-type="dijit/form/Button"
+                        id="restart_btn_node">restart
+                </button>
+            </td>
+            <td>
+                <button data-dojo-type="dijit/form/Button"
+                        id="reboot_btn_node">reboot
+                </button>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <label id="hint_node"></label>
+            </td>
+        </tr>
+    </table>
+</div>
+<div id="standby"></div>
+
+<script>
+    require(["dojo/parser", "dojo/on", "dojo/dom", "dojo/dom-construct", "dojo/dom-style", "dojo/aspect", "dojo/query", "dojo/_base/declare",
+             "dojo/_base/lang", "dojo/_base/array",
+             "dijit/registry", "dijit/form/Select", "dijit/form/TextBox", "dijit/form/ValidationTextBox",
+             "dijit/form/Textarea", "dijit/form/CheckBox", "dijit/form/Button",
+             "dojox/widget/Standby", "roundgis/rtutils",
+             "dojox/validate", "dojox/validate/web", "rgw/sys_cfg_rpc",
+             "dojo/ready"],
+            function (parser, on, dom, domc, doms, aspect, query, declare, lang, darray, registry, Select, TextBox, ValidationTextBox,
+                      Textarea, CheckBox, Button, Standby,
+                      rtutils, dx_validate, dx_validate_web,
+                      sys_cfg_rpc,
+                      ready) {
+                ready(function () {
+                    var initEnv = function () {
+                        BasicEnv.standby = new Standby({target: "main_window"});
+                        document.body.appendChild(BasicEnv.standby.domNode);
+                        BasicEnv.standby.startup();
+                    };
+
+                    var AfterInit = function () {
+                        GetCfg();
+                    };
+
+                    var GetCfg = function () {
+                        BasicEnv.standby.show();
+                        rtutils.Rpc2Deferred(sys_cfg_rpc.GetCfg({"token": BasicEnv.sessionid})).then(
+                                function (result) {
+                                    BasicEnv.standby.hide();
+                                    SetUI(result);
+                                },
+                                function (err) {
+                                    BasicEnv.standby.hide();
+                                    rtutils.ReloadWhenExpired(err);
+                                    console.log(err);
+                                    SetHint("server error");
+                                }
+                        );
+                    };
+
+
+                    var SetHint = function (hint) {
+                        dom.byId("hint_node").innerHTML = hint;
+                    };
+
+                    var SetUI = function (mdl) {
+                        if(mdl) {
+                            registry.byId("tz_select_node").set("value", mdl.timezone || "UTC");
+                            registry.byId("pagekite_frontend_input_node").set("value", mdl.pagekite_frontend || "");
+                            registry.byId("domain_input_node").set("value", mdl.domain || "");
+                            registry.byId("pagekite_pwd_input_node").set("value", mdl.pagekite_pwd || "");
+                            registry.byId("polling_interval_input_node").set("value", mdl.polling_interval || "12");
+                            registry.byId("pwd_input_node").set("value", mdl.pwd || "");
+                            registry.byId("gw_url_input_node").set("value", mdl.gw_url || "");
+                            registry.byId("gw_pwd_input_node").set("value", mdl.gw_pwd || "");
+                            registry.byId("email_sender_input_node").set("value", mdl.email_sender || "");
+                            registry.byId("elasticemail_api_key_input_node").set("value", mdl.elasticemail_api_key || "");
+                            registry.byId("elasticemail_send_url_input_node").set("value", mdl.elasticemail_send_url || "");
+                        }
+                    };
+
+                    var MakeModel = function () {
+                        var data = {};
+                        data.timezone = registry.byId("tz_select_node").get("value");
+                        data.pagekite_frontend = registry.byId("pagekite_frontend_input_node").get("value");
+                        data.domain = registry.byId("domain_input_node").get("value");
+                        data.pagekite_pwd = registry.byId("pagekite_pwd_input_node").get("value");
+                        data.polling_interval = registry.byId("polling_interval_input_node").get("value");
+                        data.pwd = registry.byId("pwd_input_node").get("value");
+                        data.gw_url = registry.byId("gw_url_input_node").get("value");
+                        data.gw_pwd = registry.byId("gw_pwd_input_node").get("value");
+                        var temp = registry.byId("email_sender_input_node").get("value");
+                        var emails = dx_validate.getEmailAddressList(temp);
+                        data.email_sender = (emails.length>0)?emails[0]:"";
+                        data.elasticemail_api_key = registry.byId("elasticemail_api_key_input_node").get("value");
+                        data.elasticemail_send_url = registry.byId("elasticemail_send_url_input_node").get("value");
+                        return data;
+                    };
+
+                    var SetCfg = function (mdl) {
+                        BasicEnv.standby.show();
+                        var deferobj = rtutils.Rpc2Deferred(sys_cfg_rpc.SetCfg({"token": BasicEnv.sessionid,
+                                                                                "cfg": mdl}));
+                        deferobj.then(
+                                function (result) {
+                                    rtutils.HideStandby(BasicEnv.standby, "main_window");
+                                    SetHint("ok");
+                                },
+                                function (err) {
+                                    rtutils.ReloadWhenExpired(err);
+                                    rtutils.HideStandby(BasicEnv.standby, "main_window");
+                                    SetHint(err.declaredType);
+                                }
+                        );
+                    };
+
+                    initEnv();
+                    AfterInit();
+
+                    on(registry.byId("ok_btn_node"), "click", function (evt) {
+                        var rec = MakeModel();
+                        SetCfg(rec);
+                    });
+
+                    on(registry.byId("reboot_btn_node"), "click", function (evt) {
+                        BasicEnv.standby.show();
+                        rtutils.Rpc2Deferred(sys_cfg_rpc.RebootSys({"token": BasicEnv.sessionid})).then(
+                                function (result) {
+                                    BasicEnv.standby.hide();
+                                    SetUI(result);
+                                },
+                                function (err) {
+                                    BasicEnv.standby.hide();
+                                    rtutils.ReloadWhenExpired(err);
+                                    console.log(err);
+                                    SetHint("server error");
+                                }
+                        );
+                    });
+
+                    on(registry.byId("restart_btn_node"), "click", function (evt) {
+                        BasicEnv.standby.show();
+                        rtutils.Rpc2Deferred(sys_cfg_rpc.RestartSys({"token": BasicEnv.sessionid})).then(
+                                function (result) {
+                                    BasicEnv.standby.hide();
+                                    SetUI(result);
+                                },
+                                function (err) {
+                                    BasicEnv.standby.hide();
+                                    rtutils.ReloadWhenExpired(err);
+                                    console.log(err);
+                                }
+                        );
+                    });
+
+                    on(registry.byId("register_dev_btn_node"), "click", function (evt) {
+                        BasicEnv.standby.show();
+                        rtutils.Rpc2Deferred(sys_cfg_rpc.RegisterDevice({"token": BasicEnv.sessionid})).then(
+                                function (result) {
+                                    BasicEnv.standby.hide();
+                                    SetHint("registered "+result.length.toString()+" devices");
+                                },
+                                function (err) {
+                                    BasicEnv.standby.hide();
+                                    rtutils.ReloadWhenExpired(err);
+                                    console.log(err);
+                                }
+                        );
+                    });
+
+                    on(registry.byId("sync_dev_btn_node"), "click", function (evt) {
+                        BasicEnv.standby.show();
+                        rtutils.Rpc2Deferred(sys_cfg_rpc.SyncDevice({"token": BasicEnv.sessionid})).then(
+                                function (result) {
+                                    BasicEnv.standby.hide();
+                                    SetHint(result);
+                                },
+                                function (err) {
+                                    BasicEnv.standby.hide();
+                                    rtutils.ReloadWhenExpired(err);
+                                    console.log(err);
+                                }
+                        );
+                    });
+
+                });
+            });
+</script>
+</body>
+</html>

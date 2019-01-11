@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ title }}</title>
+    <meta http-equiv="content-type" content="text/html" charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+
+    <link rel="stylesheet" href="/jslib/dojo/resources/dojo.css">
+    <link rel="stylesheet" href="/jslib/dijit/themes/claro/claro.css">
+    <script>
+        var dojoConfig= { parseOnLoad: true, async: true,
+            packages: [
+                {"name": "roundgis", "location": location.pathname.match(/^\//) + "js"},
+                {"name": "dgrid", "location": location.pathname.match(/^\//) + "jslib/dgrid" },
+                {"name": "dstore", "location": location.pathname.match(/^\//)+"jslib/dstore"},
+                {"name": "rgw", "location": location.pathname.match(/^\//) + "{{ app_js_dir }}"}
+            ]
+        };
+    </script>
+    <script>
+        //global env here
+        var BasicEnv = {templatePath: location.pathname.match(/^\//) + "templates",
+                        rgw_template_path: location.pathname.match(/^\//) + "{{ app_template_dir }}"};
+        BasicEnv.sessionid = "{{ sessionid }}";
+        BasicEnv.edit_mode = "{{ edit_mode }}";
+        BasicEnv.id = "{{ id }}";
+    </script>
+
+    <script src="/jslib/dojo/dojo.js"></script>
+
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        html,body,#main_window {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+        }
+    </style>
+</head>
+<body class="claro" id="body_node">
+<div id="main_window">
+    <table style="margin: 0 auto">
+        <tr>
+            <td>id: </td>
+            <td><input data-dojo-type="dijit/form/TextBox"
+                       data-dojo-props="trim:true,prpercase:true"
+                       id="id_input_node"
+                       type="text" style="width: 11em;"/></td>
+        </tr>
+        <tr>
+            <td>deviceid: </td>
+            <td><input data-dojo-type="dijit/form/TextBox"
+                       data-dojo-props="trim:true,prpercase:true"
+                       id="deviceid_input_node"
+                       type="text" style="width: 11em;"/></td>
+        </tr>
+        <tr>
+            <td>val offset: </td>
+            <td><input data-dojo-type="dijit/form/TextBox"
+                       data-dojo-props="trim:true,prpercase:true"
+                       id="val_offset_input_node"
+                       type="text" style="width: 6em;"/></td>
+        </tr>
+        <tr>
+            <td>data type: </td>
+            <td>
+                <select data-dojo-type="dijit/form/Select"
+                        id="data_no_select_node">
+                    {% for idx, tbl in enumerate(data_no_tbls) %}
+                        {% set selected_str = "selected" if idx == 0 else "" %}
+                        <option value="{{ tbl['value'] }}" selected="{{ selected_str }}">{{ tbl['label'] }}</option>
+                    {% end %}
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td>name: </td>
+            <td> <input data-dojo-type="dijit/form/TextBox"
+                        data-dojo-props="trim:true,prpercase:true"
+                        type="text"
+                        id="name_input_node" required="true"
+                        style="width: 15em;"/></td>
+        </tr>
+        <tr>
+            <td>tag: </td>
+            <td> <input data-dojo-type="dijit/form/TextBox"
+                        data-dojo-props="trim:true,prpercase:true"
+                        type="text"
+                        id="tag_input_node" required="true"
+                        style="width: 15em;"/></td>
+        </tr>
+        <tr>
+            <td>icon:</td>
+            <td>
+                <select data-dojo-type="dijit/form/Select"
+                        id="iconid_select_node">
+                    {% for idx, tbl in enumerate(iconid_tbls) %}
+                        {% set selected_str = "selected" if idx == 0 else "" %}
+                        <option value="{{ tbl['value'] }}" selected="{{ selected_str }}">{{ tbl['label'] }}</option>
+                    {% end %}
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td>extra arg0: </td>
+            <td>
+                <input data-dojo-type="dijit/form/TextBox"
+                        data-dojo-props="trim:true,prpercase:true"
+                        type="text"
+                        id="extra_arg0_input_node" required="true"
+                        style="width: 4em;"/></td>
+            </td>
+        </tr>
+        <tr>
+            <td>function:</td>
+            <td>
+                <input data-dojo-type="dijit/form/Textarea"
+                       data-dojo-props="trim:true,prpercase:true"
+                       id="func_input_node"
+                       style="width: 30em; min-height: 80px;"/>
+            </td>
+        </tr>
+        <tr>
+            <td>val unit: </td>
+            <td><input data-dojo-type="dijit/form/TextBox"
+                        data-dojo-props="trim:true,prpercase:true"
+                        type="text"
+                        id="val_unit_input_node" required="true"
+                        style="width: 8em;"/></td>
+        </tr>
+        <tr>
+            <td>val precision: </td>
+            <td>
+                <input data-dojo-type="dijit/form/TextBox"
+                        data-dojo-props="trim:true,prpercase:true"
+                        type="text"
+                        id="val_precision_input_node" required="true"
+                        style="width: 4em;"/></td>
+            </td>
+        </tr>
+        <tr>
+            <td>remark:</td>
+            <td><input data-dojo-type="dijit/form/TextBox"
+                       data-dojo-props="trim:true,prpercase:true"
+                       type="text"
+                       id="remark_input_node" required="true"
+                       style="width: 20em;"/></td>
+        </tr>
+        <tr>
+            <td>
+                <button data-dojo-type="dijit/form/Button"
+                id="ok_btn_node">ok</button>
+            </td>
+        </tr>
+    </table>
+</div>
+<div id="standby"></div>
+
+<script>
+require(["dojo/parser", "dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-style", "dojo/aspect", "dojo/query", "dojo/_base/declare",
+         "dojo/_base/lang", "dojo/_base/array",
+         "dijit/registry", "dijit/form/Select", "dijit/form/TextBox", "dijit/form/ValidationTextBox",
+         "dijit/form/Textarea", "dijit/form/CheckBox",
+         "dojox/widget/Standby",  "roundgis/rtutils", "roundgis/dojo_utils", "dstore/Memory",
+         "dojox/validate", "rgw/sensor_rpc",
+         "dojo/ready"],
+        function(parser, on, dom, domc, doms, aspect, query, declare, lang, darray, registry, Select, TextBox, ValidationTextBox,
+                 Textarea, CheckBox, Standby,
+                 rtutils, dojo_utils, Memory, dx_validate, sensor_rpc,
+                 ready) {
+            ready(function() {
+                var initEnv = function() {
+                    BasicEnv.standby = new Standby({target:"main_window"});
+                    document.body.appendChild(BasicEnv.standby.domNode);
+                    BasicEnv.standby.startup();
+                };
+
+                var AfterInit = function() {
+                    registry.byId("id_input_node").set("disabled", true);
+                    if(BasicEnv.edit_mode == "edit") {
+                        registry.byId("deviceid_input_node").set("disabled", true);
+                        registry.byId("val_offset_input_node").set("disabled", true);
+                        GetRow(BasicEnv.id);
+                    }
+                };
+
+                var GetRow = function(rowid) {
+                    BasicEnv.standby.show();
+                    rtutils.Rpc2Deferred(sensor_rpc.GetSensor({"token": BasicEnv.sessionid,
+                                                               "sensorid": rowid})).then(
+                            function(result) {
+                                BasicEnv.standby.hide();
+                                SetUI(result);
+                            },
+                            function(err) {
+                                BasicEnv.standby.hide();
+                                rtutils.ReloadWhenExpired(err);
+                                SetHint("server error");
+                            }
+                    );
+                };
+
+                var SetHint = function(hint) {
+                    alert(hint);
+                };
+
+                var SetUI = function(row) {
+                    registry.byId("id_input_node").set("value", row.id);
+                    registry.byId("deviceid_input_node").set("value", row.deviceid);
+                    registry.byId("val_offset_input_node").set("value", row.val_offset.toString());
+                    registry.byId("name_input_node").set("value", row.name || "");
+                    registry.byId("tag_input_node").set("value", row.tag || "");
+                    registry.byId("data_no_select_node").set("value", row.data_no);
+                    registry.byId("extra_arg0_input_node").set("value", (rtutils.IsValidNumber(row.extra_arg0))?row.extra_arg0.toString():"");
+                    if(row.iconid) {
+                        registry.byId("iconid_select_node").set("value", row.iconid);
+                    }
+                    registry.byId("func_input_node").set("value", (row.func_body || ""));
+                    registry.byId("val_unit_input_node").set("value", (row.val_unit || ""));
+                    registry.byId("val_precision_input_node").set("value", (rtutils.IsValidNumber(row.val_precision))?row.val_precision.toString():"");
+                    registry.byId("remark_input_node").set("value", row.remark || "");
+                };
+
+                var MakeRow = function() {
+                    var data = {};
+                    data.id = registry.byId("id_input_node").get("value");
+                    data.name = registry.byId("name_input_node").get("value");
+                    data.tag = registry.byId("tag_input_node").get("value");
+                    data.val_unit = registry.byId("val_unit_input_node").get("value");
+                    var temp = parseInt(registry.byId("val_precision_input_node").get("value"));
+                    data.val_precision = rtutils.IsValidNumber(temp)?temp:null;
+                    var temp = parseInt(registry.byId("val_offset_input_node").get("value"));
+                    data.val_offset = rtutils.IsValidNumber(temp)?temp:null;
+                    data.deviceid = registry.byId("deviceid_input_node").get("value");
+                    data.data_no = registry.byId("data_no_select_node").get("value");
+                    var extra_arg0 = parseFloat(registry.byId("extra_arg0_input_node").get("value"));
+                    data.extra_arg0 = (rtutils.IsValidNumber(extra_arg0))?extra_arg0:null;
+                    data.func_body = registry.byId("func_input_node").get("value");
+                    data.remark = registry.byId("remark_input_node").get("value");
+                    data.iconid = registry.byId("iconid_select_node").get("value");
+                    return data;
+                };
+
+                var SetRow = function(device) {
+                    BasicEnv.standby.show();
+                    var deferobj = undefined;
+                    if(BasicEnv.edit_mode == "edit") {
+                        deferobj = rtutils.Rpc2Deferred(sensor_rpc.SetSensor({"token": BasicEnv.sessionid,
+                                                                              "sensor": device}));
+                    }
+                    else {
+                        deferobj = rtutils.Rpc2Deferred(sensor_rpc.AddSensor({"token": BasicEnv.sessionid,
+                                                                              "sensor": device}))
+                    }
+                    deferobj.then(
+                            function(result) {
+                                rtutils.HideStandby(BasicEnv.standby, "main_window");
+                                SetHint("ok");
+                            },
+                            function(err) {
+                                rtutils.ReloadWhenExpired(err);
+                                rtutils.HideStandby(BasicEnv.standby, "main_window");
+                                if(err.declaredType == "SqliteIntegrityError") {
+                                    SetHint("id conflicts");
+                                }
+                                else {
+                                    SetHint("server error");
+                                }
+                            }
+                        );
+                };
+
+                initEnv();
+                AfterInit();
+
+                on(registry.byId("ok_btn_node"), "click", function(evt) {
+                    var new_row = MakeRow();
+                    SetRow(new_row);
+                });
+            });
+        });
+</script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+<div>
+    <div>
+        <table>
+            <tr>
+                <td><label>command:</label></td>
+                <td>
+                    <input data-dojo-type="dijit/form/Textarea" style="width: 19em;"
+                           data-dojo-props="trim:true,prpercase:true"
+                           data-dojo-attach-point="command_input_node"/>
+                </td>
+                <td>
+                    <div>
+                        <label>is binary: </label>
+                        <input data-dojo-attach-point="binary_checkbox_node"
+                               data-dojo-type="dijit/form/CheckBox" />
+                    </div>
+                    <div>
+                        <label>is passthrough: </label>
+                        <input data-dojo-attach-point="passthrough_checkbox_node"
+                               data-dojo-type="dijit/form/CheckBox" />
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <button data-dojo-type="dijit/form/Button"
+                            data-dojo-attach-point="send_btn_node">send</button>
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div>
+        <label data-dojo-attach-point="hint_node"></label>
+    </div>
+</div>

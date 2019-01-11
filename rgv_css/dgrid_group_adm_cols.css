@@ -1,0 +1,33 @@
+.field-name {
+    text-align: center;
+}
+
+.field-cts {
+    width: 7em;
+    text-align: center;
+}
+
+.field-remark {
+    width: 30%;
+    text-align: center;
+}
+
+.field-watched {
+    width: 10%;
+}
+
+th.field-notice_emails {
+    text-align: center;
+}
+
+th.field-notice_nos {
+    text-align: center;
+}
+
+.field-groupid {
+    width: 15em;
+}
+
+th.field-groupid {
+    text-align: center;
+}

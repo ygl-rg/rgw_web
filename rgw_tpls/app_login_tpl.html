@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ title }}</title>
+    <meta http-equiv="content-type" content="text/html" charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+
+    <link rel="stylesheet" href="/jslib/dijit/themes/claro/claro.css">
+    <link rel="stylesheet" href="/jslib/dojo/resources/dojo.css">
+    <link rel="stylesheet" href="/css/app.css">
+    <script>
+        var dojoConfig= { parseOnLoad: true, async: true,
+            packages: [
+                {"name": "shimmy", "location": location.pathname.match(/^\//) + "jslib/shimmy"},
+                {"name": "roundgis", "location": location.pathname.match(/^\//) + "js"},
+                {"name": "dgrid", "location": location.pathname.match(/^\//) + "jslib/dgrid"},
+                {"name": "dstore", "location": location.pathname.match(/^\//) + "jslib/dstore"},
+                {"name": "rgw", "location": location.pathname.match(/^\//) + "{{ app_js_dir }}"}
+            ]
+        };
+    </script>
+    <script>
+        //global env here
+        var BasicEnv = {templatePath: location.pathname.match(/^\//) + "templates",
+                        rgw_template_path: location.pathname.match(/^\//) + "{{ app_template_dir }}"};
+        BasicEnv.user_lang = "{{ user_lang }}";
+        BasicEnv.hint_tbl = {
+            "account_pwd_missing": {
+                "en": "please enter password",
+                "zh-ch": "请输入密码",
+                "zh-tw": "請輸入密碼",
+                "vn": "vui lòng nhập tài khoản và mật khẩu",
+                "kh": "សូមបញ្ចូលគណនីនិងពាក្យសម្ងាត់"
+            }
+        };
+    </script>
+
+    <script src="/jslib/dojo/dojo.js"></script>
+
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+            background-image: url("/imgs/{{ bkgpng }}");
+            background-size: 100% 100%;
+        }
+
+        #login_node {
+            border: 5px solid #999;
+            width: 280px;
+            padding: 0px;
+            margin: 0px auto;
+            background-color: #F8F8F8;
+            text-align: center;
+        }
+    </style>
+    <title>{{ title }}</title>
+</head>
+<body class="claro">
+    <br><br><br><br>
+        <div data-dojo-type="dijit/form/Form" method="post" encType="multipart/form-data"
+             action="{{ loginurl }}" id="login_node">
+                <label style="color: blue; font-weight: bold">{{ title }}</label>
+                <table style="width: 100%; margin-top: 5px;">
+                    <tr>
+                        <td><input data-dojo-type="dijit/form/TextBox" name="pwd" id="pwd_node"
+                            data-dojo-props='trim:true,placeHolder:"password"'
+                            type="password" style="width:10.5em;"/></td>
+                    </tr>
+                </table>
+                <div style="margin-top: 0.5em;">
+                    {% for idx, app_opt in enumerate(app_options) %}
+                        {% set margin_val = 0 if idx == 0 else 1 %}
+                        <div style="margin-top: {{ margin_val }}em;">
+                            <input type="radio" data-dojo-type="dijit/form/RadioButton"
+                                   name="web_type" value="{{ app_opt['value'] }}" /><label>{{ app_opt["label"] }}</label>
+                        </div>
+                    {% end %}
+                </div>
+                <div style="margin-top: 0.5em;">
+                    <div>
+                        {% for idx, lang_option in enumerate(lang_options) %}
+                            {% set left_margin = 0 if idx == 0 else 1 %}
+                                <span style="margin-left: {{ left_margin }}em;">
+                                    <input type="radio" data-dojo-type="dijit/form/RadioButton" value="{{ lang_option["value"] }}"
+                                           id="{{ lang_option["value"] }}_radio_node" name="user_lang"/><label class="rgz_kh_font">{{ lang_option["label"] }}</label>
+                                </span>
+                        {% end %}
+                    </div>
+                </div>
+                <div style="margin-top: 0.5em;">
+                    <button data-dojo-type="dijit/form/Button" type="submit">login</button>
+                </div>
+                <div style="color:grey;">
+                    Cookies must be enabled
+                </div>
+                <div>
+                    <label id="hint_node" style="color: red;">{{ hint }}</label>
+                </div>
+                <div>
+                    <br>
+                    for better user experience, we recommend using chrome browser.
+                </div>
+                <div>
+                    <br><br><br>
+                    <label style="font-style: italic;">Proudly powered by RoundGIS Lab</label>
+                </div>
+           </div>
+<script>
+require(["dojo/parser", "dojo/on","dojo/dom",
+    "dijit/registry",  "dojo/query", "roundgis/rtutils", "dojo/ready"],
+        function(parser, on, dom, registry, dquery, rtutils, ready) {
+            ready(function() {
+                if(BasicEnv.user_lang) {
+                    var id = BasicEnv.user_lang+"_radio_node";
+                    registry.byId(id).set("checked", "checked");
+                }
+                on(registry.byId("login_node"), "submit", function(evt) {
+                    if(registry.byId("pwd_node").get("value").length == 0) {
+                        evt.preventDefault();
+                        var lang_val = dquery("input[type=radio][name=user_lang]:checked")[0].value;
+                        dom.byId("hint_node").innerHTML = rtutils.GetLangField(BasicEnv.hint_tbl["account_pwd_missing"], lang_val);
+                    }
+                    else {
+                        return true;
+                    }
+                });
+            });
+        });
+</script>
+</body>
+</html>

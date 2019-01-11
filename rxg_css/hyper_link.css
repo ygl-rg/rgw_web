@@ -1,0 +1,12 @@
+.rgy_report_link {
+    display: inline-block;
+    text-align: center;
+    border: 1px solid #cccccc;
+    border-color: #ccc;
+    background-color: #0074cc;
+    border-radius: 6px;
+    color: #ffffff;
+    cursor: pointer;
+    text-decoration: none;
+    padding: 3px 5px;
+}

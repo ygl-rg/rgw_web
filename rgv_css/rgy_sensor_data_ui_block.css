@@ -1,0 +1,9 @@
+.rgy_sensor_data_ui_block {
+    display: block;
+    width: 99%;
+    border-style: solid;
+    border-width: 1px;
+    border-color: #808080;
+    font-family: "Khmer UI";
+    font-size: 15px;
+}

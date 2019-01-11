@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ title }}</title>
+    <meta http-equiv="content-type" content="text/html" charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <link rel="stylesheet" href="/v/jslib/dojo/resources/dojo.css">
+    <link rel="stylesheet" href="/v/jslib/dgrid/css/dgrid.css">
+    <link rel="stylesheet" href="/v/jslib/dgrid/css/skins/claro.css">
+    <link rel="stylesheet" href="/v/jslib/dijit/themes/claro/claro.css">
+    <link rel="stylesheet" href="/v/css/app.css">
+    <link rel="stylesheet" href="/{{ app_css_dir }}/dijit_btns.css">
+    <script>
+        var dojoConfig= { parseOnLoad: true, async: true,
+            packages: [
+                {"name": "roundgis", "location": location.pathname.match(/^\//) + "v/js"},
+                {"name": "dgrid", "location": location.pathname.match(/^\//) + "v/jslib/dgrid" },
+                {"name": "dstore", "location": location.pathname.match(/^\//)+"v/jslib/dstore"},
+                {"name": "rgv", "location": location.pathname.match(/^\//) + "{{ app_js_dir }}"}
+            ]
+        };
+    </script>
+    <script>
+        //global env here
+        var BasicEnv = {templatePath: location.pathname.match(/^\//) + "templates",
+                        rgv_template_path: location.pathname.match(/^\//) + "{{ app_template_dir }}"};
+        BasicEnv.sessionid = "{{ sessionid }}";
+        BasicEnv.edit_mode = "{{ edit_mode }}";
+        BasicEnv.userid = "{{ userid }}";
+    </script>
+
+    <script src="/v/jslib/dojo/dojo.js"></script>
+
+    <script type="text/javascript"
+            src="/v/jslib/My9748/WdatePicker.js">
+    </script>
+
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        html,body,#mainwindow {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+        }
+    </style>
+</head>
+<body class="claro" id="body_node">
+<div id="mainwindow" class="rgy_kh_font">
+    <table style="margin: 0 auto">
+        <tr>
+            <td>account (required)|帐号(必须):</td>
+            <td><input data-dojo-type="dijit/form/ValidationTextBox"
+                       data-dojo-props="trim:true,prpercase:true, regExp:'^[\\w]{3,}'"
+                       type="text"
+                       id="id_input_node" required="true"/></td>
+        </tr>
+        <tr>
+            <td>password (required)|密码(必须):</td>
+            <td><input data-dojo-type="dijit/form/ValidationTextBox"
+                       data-dojo-props="trim:true,prpercase:true,regExp:'^\\w{3,}'"
+                       type="text"
+                       id="pwd_input_node" required="true" /></td>
+        </tr>
+        <tr>
+            <td>
+                <select data-dojo-type="dijit/form/Select"
+                        id="uno_select_node">
+                    {% for idx, uno_option in enumerate(uno_options) %}
+                        {% if idx == 0 %}
+                            <option value="{{ uno_option["value"] }}" selected="selected">{{ uno_option["label"] }}</option>
+                        {% else %}
+                            <option value="{{ uno_option["value"] }}">{{ uno_option["label"] }}</option>
+                        {% end %}
+                    {% end %}
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td>name|名字:</td>
+            <td><input data-dojo-type="dijit/form/TextBox"
+                       data-dojo-props="trim:true,prpercase:true"
+                       type="text"
+                       id="name_input_node" required="true"/></td>
+        </tr>
+        <tr>
+            <td>phone|电话:</td>
+            <td><input data-dojo-type="dijit/form/TextBox"
+                       data-dojo-props="trim:true,prpercase:true"
+                       type="text"
+                       id="tel_input_node" /></td>
+        </tr>
+        <tr>
+            <td>email:</td>
+            <td><input data-dojo-type="dijit/form/TextBox"
+                       data-dojo-props="trim:true,prpercase:true"
+                       type="text"
+                       id="email_input_node" /></td>
+        </tr>
+        <tr>
+            <td>remark|备注:</td>
+            <td><input data-dojo-type="dijit/form/TextBox"
+                       data-dojo-props="trim:true,prpercase:true"
+                       type="text"
+                       id="remark_input_node" /></td>
+        </tr>
+        <tr>
+            <td>
+                <button data-dojo-type="dijit/form/Button"
+                id="ok_btn_node">ok</button>
+            </td>
+            <td><label id="hint_node"></label></td>
+        </tr>
+    </table>
+</div>
+<div id="standby"></div>
+
+<script>
+require(["dojo/parser", "dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-style", "dojo/aspect", "dojo/query", "dojo/_base/declare",
+         "dojo/_base/lang", "dojo/_base/array",
+         "dijit/registry", "dijit/form/Select", "dijit/form/TextBox", "dijit/form/ValidationTextBox",
+         "dijit/form/Textarea", "dijit/form/CheckBox",
+         "dojox/widget/Standby",  "roundgis/rtutils", "roundgis/dojo_utils", "dstore/Memory",
+         "dojox/validate", "dojox/validate/web", "rgv/user_adm_rpc",
+         "dojo/ready"],
+        function(parser, on, dom, domc, doms, aspect, query, declare, lang, darray, registry, Select, TextBox, ValidationTextBox,
+                 Textarea, CheckBox, Standby,
+                 rtutils, dojo_utils, Memory, dx_validate, dxv_web, user_adm_rpc,
+                 ready) {
+            ready(function() {
+                var initEnv = function() {
+                    BasicEnv.standby = new Standby({target:"mainwindow"});
+                    document.body.appendChild(BasicEnv.standby.domNode);
+                    BasicEnv.standby.startup();
+                };
+
+                var AfterInit = function() {
+                    if(BasicEnv.edit_mode == "edit") {
+                        registry.byId("id_input_node").set("disabled", true);
+                        GetRecord(BasicEnv.userid);
+                    }
+                };
+
+                var GetRecord = function(userid) {
+                    BasicEnv.standby.show();
+                    rtutils.Rpc2Deferred(user_adm_rpc.GetUser(BasicEnv.sessionid, userid)).then(
+                            function(result) {
+                                BasicEnv.standby.hide();
+                                SetUI(result);
+                            },
+                            function(err) {
+                                BasicEnv.standby.hide();
+                                rtutils.ReloadWhenExpired(err);
+                                SetHint("server error");
+                            }
+                    );
+                };
+
+                var SetHint = function(hint) {
+                    dom.byId("hint_node").innerHTML = hint;
+                };
+
+                var SetUI = function(user) {
+                    registry.byId("id_input_node").set("value", user.id);
+                    registry.byId("pwd_input_node").set("value", user.password);
+                    registry.byId("uno_select_node").set("value", user.uno || "tenant");
+                    registry.byId("name_input_node").set("value", user.name || "");
+                    registry.byId("tel_input_node").set("value", user.tel || "");
+                    registry.byId("email_input_node").set("value", user.email || "");
+                    registry.byId("remark_input_node").set("value", user.remark || "");
+                };
+
+                var MakeRecord = function(emails) {
+                    var data = {};
+                    data.id = registry.byId("id_input_node").get("value");
+                    data.password = registry.byId("pwd_input_node").get("value");
+                    data.uno = registry.byId("uno_select_node").get("value");
+                    data.name = registry.byId("name_input_node").get("value");
+                    data.tel = registry.byId("tel_input_node").get("value");
+                    data.email = (emails.length>0)?emails[0]:"";
+                    data.remark = registry.byId("remark_input_node").get("value");
+                    return data;
+                };
+
+                var SetRecord = function(user) {
+                    BasicEnv.standby.show();
+                    var deferobj = undefined;
+                    if(BasicEnv.edit_mode == "edit") {
+                        deferobj = rtutils.Rpc2Deferred(user_adm_rpc.SetUser(BasicEnv.sessionid, {"user": user}));
+                    }
+                    else {
+                        deferobj = rtutils.Rpc2Deferred(user_adm_rpc.AddUser(BasicEnv.sessionid, {"user": user}));
+                    }
+                    deferobj.then(
+                            function(result) {
+                                rtutils.HideStandby(BasicEnv.standby, "mainwindow");
+                                SetHint("ok");
+                            },
+                            function(err) {
+                                rtutils.ReloadWhenExpired(err);
+                                rtutils.HideStandby(BasicEnv.standby, "mainwindow");
+                                if(err.declaredType == "InvalidId") {
+                                    SetHint("user id invalid");
+                                }
+                                else if(err.declaredType == "UserExist") {
+                                    SetHint("user existed");
+                                }
+                                else {
+                                    SetHint("server error");
+                                }
+                            }
+                        );
+                };
+
+                initEnv();
+                AfterInit();
+
+                on(registry.byId("ok_btn_node"), "click", function(evt) {
+                    var email_str = registry.byId("email_input_node").get("value");
+                    var emails = dx_validate.getEmailAddressList(email_str);
+                    if(!registry.byId("id_input_node").isValid()) {
+                        SetHint("account invalid");
+                    }
+                    else if(!registry.byId("pwd_input_node").isValid()) {
+                        SetHint("password invalid");
+                    }
+                    else if(email_str.length > 0 && emails.length == 0) {
+                        SetHint("email invalid");
+                    }
+                    else {
+                        var new_user = MakeRecord(emails);
+                        SetRecord(new_user);
+                    }
+                });
+            });
+        });
+</script>
+</body>
+</html>

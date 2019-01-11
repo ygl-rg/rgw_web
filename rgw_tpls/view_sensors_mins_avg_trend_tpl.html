@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ title }}</title>
+    <meta http-equiv="content-type" content="text/html" charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+
+    <link rel="stylesheet" href="/jslib/dijit/themes/claro/claro.css">
+    <link rel="stylesheet" href="/jslib/dojo/resources/dojo.css">
+    <link rel="stylesheet" href="/jslib/dgrid/css/dgrid.css">
+    <link rel="stylesheet" href="/jslib/dgrid/css/skins/claro.css">
+    <link rel="stylesheet" href="/css/app.css">
+    <script src="/js/origin_patch.js"></script>
+    <script type="text/javascript"
+            src="/jslib/My9748/WdatePicker.js">
+    </script>
+    <script>
+        var dojoConfig = {
+            parseOnLoad: true, async: true,
+            //gfxRenderer: "svg,silverlight,vml",
+            packages: [
+                {"name": "shimmy", "location": location.pathname.match(/^\//) + "jslib/shimmy"},
+                {"name": "roundgis", "location": location.pathname.match(/^\//) + "js"},
+                {"name": "dgrid", "location": location.pathname.match(/^\//) + "jslib/dgrid"},
+                {"name": "dstore", "location": location.pathname.match(/^\//) + "jslib/dstore"},
+                {"name": "rgw", "location": location.pathname.match(/^\//) + "{{ app_js_dir }}"}
+            ]
+        };
+    </script>
+    <script>
+        //global env here
+        var BasicEnv = {
+            lang: "{{ user_lang }}",
+            curr_location: location.pathname.match(/^\//),
+            templatePath: location.pathname.match(/^\//) + "templates",
+            rgw_template_path: location.pathname.match(/^\//) + "{{ app_template_dir }}",
+            imgpath: location.pathname.match(/^\//) + "imgs",
+            standby: undefined,
+            main_grid: undefined
+        };
+        BasicEnv.sessionid = "{{ sessionid }}";
+        BasicEnv.sensorids = [];
+        {% for sensorid in sensorids %}
+            BasicEnv.sensorids.push("{{ sensorid }}");
+        {% end %}
+    </script>
+    <script src="/jslib/dojo/dojo.js"></script>
+
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body, #main_ui_node {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: "Khmer UI";
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body class="claro" id="body_node">
+<div id="main_ui_node" data-dojo-type="dijit/layout/ContentPane">
+    <div style="width: 99%;">
+        <table>
+            <tr>
+                <td>
+                    <input data-dojo-type="dijit/form/TextBox"
+                           data-dojo-props="trim:true, propercase:true, readonly:true"
+                           type="text" required="required"
+                           id="start_time_node" style="width: 8em; " />
+                </td>
+                <td>
+                    <input data-dojo-type="dijit/form/TextBox"
+                           data-dojo-props="trim:true, propercase:true, readonly:true"
+                           type="text"
+                           id="stop_time_node" style="width: 8em; " required="required" />
+                </td>
+                <td>
+                    <select data-dojo-type="dijit/form/Select"
+                        id="mins_interval_select_node">
+                            {% for idx, mins_interval in enumerate(mins_interval_tbls) %}
+                                {% if 'selected' in mins_interval %}
+                                    <option value="{{ mins_interval['value'] }}" selected="selected">{{ mins_interval["label"] }}</option>
+                                {% else %}
+                                    <option value="{{ mins_interval['value'] }}">{{ mins_interval["label"] }}</option>
+                                {% end %}
+                            {% end %}
+                    </select>
+                </td>
+                <td>
+                        <button data-dojo-type="dijit/form/Button"
+                            id="query_btn_node">ok
+                        </button>
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div id="plotting_container_node" style="width: 98%; height: 90%;"
+             data-dojo-type="dijit/layout/ContentPane"></div>
+
+</div>
+<div id="standby"></div>
+</body>
+<script>
+    require(["dojo/parser", "dojo/_base/declare", "dojo/_base/lang", "dojo/has", "dojo/window", "dojo/on", "dojo/aspect", "dojo/query",
+                "dojo/dom", "dojo/dom-construct", "dojo/dom-class", "dojo/dom-geometry", "dojo/_base/array", "dojo/dom-style", "dojo/Deferred",
+                "dojo/promise/all", "dojo/date",
+                "dijit/registry", "dijit/Toolbar", "dijit/Dialog", "dijit/layout/BorderContainer", "dijit/layout/TabContainer", "dijit/layout/ContentPane",
+                "dijit/form/Button", "dijit/form/TextBox", "dijit/form/RadioButton", "dijit/Tooltip", "dojox/timing", "dojox/collections/Set",
+                "dojox/widget/Standby", "dojox/charting/Chart", "dojox/charting/themes/Claro",
+                "dojox/charting/plot2d/Bars", "dojox/charting/plot2d/Pie", "dojox/charting/plot2d/Lines",
+                "dojox/charting/action2d/Tooltip", "dojox/charting/action2d/MouseZoomAndPan",
+                "dojox/charting/action2d/TouchZoomAndPan", "dojox/charting/action2d/TouchIndicator",
+                "dojox/charting/plot2d/Markers", "dojox/charting/axis2d/Default", "dojo/fx/easing",
+                "dstore/Memory",
+                "roundgis/rtutils", "roundgis/dojo_utils",
+                "rgw/em_rpc", "rgw/SensorTrendBlockUI",
+                "rgw/multi_lang",
+                "dojo/ready"],
+            function (parser, declare, lang, d_has, dwin, on, aspect, dquery, dom, domc, domclass, dgeom, darray, domstyle, Deferred,
+                      all, dojo_date, registry, Toolbar,
+                      Dialog, BorderContainer, TabContainer, ContentPane, Button, TextBox, RadioButton, Tooltip,
+                      dxtiming, Set, Standby, Chart, Claro, Bars, Pie, Lines,
+                      ChartTooltip, MouseZoomAndPan, TouchZoomAndPan, TouchIndicator, ChartMarkers,
+                      ChartDefault, ChartEasing,
+                      Memory,
+                      rtutils, dojo_utils, em_rpc, SensorTrendBlockUI,
+                      multi_lang, ready) {
+                ready(function () {
+                    var InitEnv = function () {
+                        BasicEnv.standby = new Standby({target: "main_ui_node"});
+                        document.body.appendChild(BasicEnv.standby.domNode);
+                        BasicEnv.standby.startup();
+                        BasicEnv.start_time_node = registry.byId("start_time_node");
+                        BasicEnv.stop_time_node = registry.byId("stop_time_node");
+                    };
+
+                    var SyncLog = function (start_str, stop_str, mins_interval) {
+                        var start_ts = rtutils.date2ts(new Date(start_str));
+                        var stop_ts = rtutils.date2ts(new Date(stop_str));
+                        var container_obj = registry.byId("plotting_container_node");
+                        domc.empty(container_obj.domNode);
+                        BasicEnv.standby.show();
+                        return rtutils.Rpc2Deferred(em_rpc.FindSensorMinsAvgLog({
+                                "sensorids": BasicEnv.sensorids,
+                                "start_ts": start_ts, "stop_ts": stop_ts,
+                                "mins_interval": mins_interval
+                            })).then(
+                                    function (result) {
+                                        BasicEnv.standby.hide();
+                                        BasicEnv.sensors_tbl = result.sensors_tbl;
+                                        var chart_height = 80.0/BasicEnv.sensorids.length;
+                                        for(var i = 0; i!=BasicEnv.sensorids.length; ++i) {
+                                        var trend_block = new SensorTrendBlockUI({
+                                            sensor_mdl: result.sensors_tbl[BasicEnv.sensorids[i].toString()],
+                                            sensor_data_rows: result.log_tbl[BasicEnv.sensorids[i].toString()],
+                                            ts_series: result.ts_series
+                                        });
+                                        trend_block.startup();
+                                        container_obj.addChild(trend_block);
+                                        trend_block.SetHeight(chart_height.toFixed(0)+"%");
+                                        trend_block.SetWidth("98%");
+                                        domc.create("div", {"style": "display: block; margin: 0; padding: 0.6em 0;"}, container_obj.domNode);
+                                        trend_block.Update();
+                                    }
+
+                                    },
+                                    function (err) {
+                                        BasicEnv.standby.hide();
+                                        rtutils.ReloadWhenExpired(err);
+                                        console.log(err);
+                                    }
+                            );
+                    };
+
+                    var AfterLogin = function () {
+                    };
+                    InitEnv();
+                    AfterLogin();
+
+                    on(registry.byId("query_btn_node"), "click", function (evt) {
+                        var temp1 = BasicEnv.start_time_node.get("value");
+                        var temp2 = BasicEnv.stop_time_node.get("value");
+                        var mins_interval = parseInt(registry.byId("mins_interval_select_node").get("value"));
+                        if(lang.isString(temp1) && temp1.length > 0 && lang.isString(temp2) && temp2.length > 0) {
+                            SyncLog(temp1, temp2, mins_interval);
+                        }
+                        else {
+                            alert(rtutils.GetLangField(multi_lang.msgs["please_input_time"], BasicEnv.lang));
+                        }
+                    });
+
+                    on(registry.byId("start_time_node"), "click", function(evt) {
+                        WdatePicker({dateFmt:'yyyy/MM/dd HH:mm', lang:'en', el: "start_time_node", readOnly: true});
+                    });
+
+                    on(registry.byId("stop_time_node"), "click", function(evt) {
+                        WdatePicker({dateFmt:'yyyy/MM/dd HH:mm', lang:'en', el: "stop_time_node", readOnly: true});
+                    });
+                });
+            });
+</script>
+</html>

@@ -1,0 +1,30 @@
+.field-name {
+    text-align: center;
+    font-family: "Khmer UI";
+}
+
+.field-trackerid {
+    text-align: center;
+}
+
+.field-nid1 {
+    width: 6em;
+    text-align: center;
+}
+
+.field-nid2 {
+    width: 6em;
+    text-align: center;
+}
+
+.field-status {
+    text-align: center;
+}
+
+th .field-remark {
+    text-align: center;
+}
+
+.field-watched {
+    width: 2em;
+}

@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ title }}</title>
+    <meta http-equiv="content-type" content="text/html" charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+
+    <link rel="stylesheet" href="/jslib/dijit/themes/claro/claro.css">
+    <link rel="stylesheet" href="/jslib/dojo/resources/dojo.css">
+    <link rel="stylesheet" href="/jslib/dgrid/css/dgrid.css">
+    <link rel="stylesheet" href="/jslib/dgrid/css/skins/claro.css">
+    <link rel="stylesheet" href="/css/app.css">
+    <script src="/js/origin_patch.js"></script>
+    <script type="text/javascript"
+            src="/jslib/My9748/WdatePicker.js">
+    </script>
+    <script>
+        var dojoConfig = {
+            parseOnLoad: true, async: true,
+            packages: [
+                {"name": "shimmy", "location": location.pathname.match(/^\//) + "jslib/shimmy"},
+                {"name": "roundgis", "location": location.pathname.match(/^\//) + "js"},
+                {"name": "dgrid", "location": location.pathname.match(/^\//) + "jslib/dgrid"},
+                {"name": "dstore", "location": location.pathname.match(/^\//) + "jslib/dstore"},
+                {"name": "rgw", "location": location.pathname.match(/^\//) + "{{ app_js_dir }}"}
+            ]
+        };
+    </script>
+    <script>
+        //global env here
+        var BasicEnv = {
+            lang: "{{ user_lang }}",
+            curr_location: location.pathname.match(/^\//),
+            templatePath: location.pathname.match(/^\//) + "templates",
+            rgw_template_path: location.pathname.match(/^\//) + "{{ app_template_dir }}",
+            imgpath: location.pathname.match(/^\//) + "imgs",
+            standby: undefined,
+            main_grid: undefined,
+            poll_timer: undefined
+        };
+        BasicEnv.sessionid = "{{ sessionid }}";
+        BasicEnv.schedule_view_url = "{{ switch_schedule_view_url }}";
+        BasicEnv.em_sensor_url = "{{ em_sensor_url }}";
+        BasicEnv.set_sensor_trigger_view_url = "{{ set_sensor_trigger_view_url }}";
+        BasicEnv.view_monthly_switch_usage_url = "{{ view_monthly_switch_usage_url }}";
+    </script>
+
+    <script src="/jslib/dojo/dojo.js"></script>
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body, #main_ui_node {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        .field-watched {
+            width: 2em;
+        }
+
+        .field-name {
+            text-align: center;
+        }
+
+        .field-tag {
+            text-align: center;
+        }
+
+        .field-status {
+            text-align: center;
+            width: 60px;
+        }
+
+        .field-remaining_seconds {
+            text-align: center;
+        }
+
+        .field-watched1 {
+            width: 10%;
+        }
+    </style>
+</head>
+<body class="claro" id="body_node">
+<div data-dojo-type="dijit/layout/BorderContainer"
+     data-dojo-props="gutters: true, showTitle:false, iconClass: 'dijit_tab_icon_map'"
+     id="main_ui_node">
+    <div data-dojo-type="dijit/layout/BorderContainer" data-dojo-props="region:'center'">
+        <div style="width: 100%;"
+             data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'center'">
+            <div style="width: 100%; margin-bottom: 5px;">
+                <input data-dojo-type="dijit/form/TextBox"
+                       data-dojo-props="trim:true,prpercase:true"
+                       id="open_duration_input_node"
+                       type="text" style="width: 5em;"/>
+                <label>{{ open_duration_label }}</label>
+                <button data-dojo-type="dijit/form/Button"
+                        id="open_valve_btn_node">{{ open_valve_label }}
+                </button>
+                <button data-dojo-type="dijit/form/Button"
+                        id="close_valve_btn_node">{{ close_valve_label }}
+                </button>
+                <button data-dojo-type="dijit/form/Button"
+                        id="schedule_btn_node">{{ set_schedule_label }}</button>
+                <a href="_blank" id="schedule_view_url_node">{{ switch_schedule_view_label }}</a>
+                <a href="_blank" id="set_cond_action_view_url_node">{{ set_cond_action_view_label }}</a>
+                <a href="_blank" id="view_monthly_switch_usage_url_node">{{ view_monthly_switch_usage_label }}</a>
+                <a href="_blank" id="goto_em_sensor_url_node">{{ goto_label }}</a>
+            </div>
+            <div id="switch_grid_node" style="height: 93%;"></div>
+        </div>
+    </div>
+</div>
+<div id="standby"></div>
+</body>
+<script>
+    require(["dojo/parser", "dojo/_base/declare", "dojo/_base/lang", "dojo/window", "dojo/on", "dojo/aspect", "dojo/query",
+                "dojo/dom", "dojo/dom-construct", "dojo/dom-class", "dojo/dom-geometry", "dojo/_base/array", "dojo/dom-style", "dojo/Deferred",
+                "dojo/promise/all", "dojo/cookie", "dojo/json", "dojo/string",
+                "dijit/registry", "dijit/Dialog", "dijit/layout/BorderContainer", "dijit/layout/TabContainer", "dijit/layout/ContentPane",
+                "dijit/form/Button", "dijit/Tooltip", "dojox/timing", "dojox/collections/Set",
+                "dojox/widget/Standby", "dojox/validate", "dgrid/OnDemandGrid", "dgrid/CellSelection", "dgrid/Editor",
+                "dgrid/extensions/ColumnHider", "dgrid/Keyboard",
+                "dstore/Memory",
+                "roundgis/rtutils", "roundgis/dojo_utils",
+                "rgw/em_rpc",
+                "rgw/EditSwitchScheduleUI",
+                "rgw/multi_lang",
+                "dojo/ready"],
+            function (parser, declare, lang, dwin, on, aspect, query, dom, domc, domclass, dgeom, darray, domstyle,
+                      Deferred, all, dcookie, djson, dstring, registry,
+                      Dialog, BorderContainer, TabContainer, ContentPane, Button, Tooltip,
+                      dxtiming, Set, Standby, dx_validate, Grid, Selection, Editor, ColumnHider, Keyboard,
+                      Memory,
+                      rtutils, dojo_utils,
+                      em_rpc, EditSwitchScheduleUI,
+                      multi_lang, ready) {
+                ready(function () {
+                    var InitEnv = function () {
+                        BasicEnv.standby = new Standby({target: "main_ui_node"});
+                        document.body.appendChild(BasicEnv.standby.domNode);
+                        BasicEnv.standby.startup();
+                        BasicEnv.switch_col_tbl = {
+                            "en": [
+                                {
+                                    label: " ",
+                                    field: "watched",
+                                    autoSave: true,
+                                    unhidable: true,
+                                    editor: "checkbox"
+                                },
+                                {field: "name", label: "Name"},
+                                {field: "tag", label: ""},
+                                {field: "status", label: "Status"},
+                                {field: "remaining_seconds", label: "Remaining"}
+                            ],
+                            "zh-cn": [
+                                {
+                                    label: " ",
+                                    field: "watched",
+                                    autoSave: true,
+                                    unhidable: true,
+                                    editor: "checkbox"
+                                },
+                                {field: "name", label: "名字"},
+                                {field: "tag", label: ""},
+                                {field: "status", label: "状态"},
+                                {field: "remaining_seconds", label: "剩余开启时长"}
+                            ],
+
+                            "zh-tw": [
+                                {
+                                    label: " ",
+                                    field: "watched",
+                                    autoSave: true,
+                                    unhidable: true,
+                                    editor: "checkbox"
+                                },
+                                {field: "name", label: "名字"},
+                                {field: "tag", label: ""},
+                                {field: "status", label: "狀態"},
+                                {field: "remaining_seconds", label: "剩餘開啟時長"}
+                            ]
+                        };
+                        BasicEnv.status_tbl = {
+                            "ON": {"en": "on", "zh-cn": "打开", "zh-tw": "打開"},
+                            "OFF": {"en": "off", "zh-cn": "关闭", "zh-tw": "關閉"},
+                            "OFFLINE": {"en": "offline", "zh-cn": "离线", "zh-tw": "離線"},
+                            "ONLINE": {"en": "online", "zh-cn": "在线", "zh-tw": "在線"}
+                        };
+                        BasicEnv.switch_store = new Memory({idProperty: "id"});
+                        BasicEnv.open_valve_btn_node = registry.byId("open_valve_btn_node");
+                        BasicEnv.close_valve_btn_node = registry.byId("close_valve_btn_node");
+                        BasicEnv.edit_schedule_ui = new EditSwitchScheduleUI();
+                        BasicEnv.edit_schedule_ui.startup();
+                        BasicEnv.schedule_btn_node = registry.byId("schedule_btn_node");
+                        BasicEnv.dialog = new Dialog();
+                        BasicEnv.dialog.startup();
+                        BasicEnv.msg_box = new Dialog();
+                        BasicEnv.msg_box.startup();
+                    };
+
+                    var TranslateUI = function() {
+                    };
+
+                    var Switch2GridItem = function(mdl) {
+                        return {
+                            "watched": false,
+                            "id": mdl.id,
+                            "name": mdl.name || "",
+                            "tag": mdl.tag || "",
+                            "status": mdl.status,
+                            "remaining_seconds": mdl.remaining_seconds,
+                            "iconid": mdl.iconid
+                        };
+                    };
+
+                    var SetSwitchGridStatusCell = function (switch_mdl, cell_node) {
+                        //cell_node.innerHTML = rtutils.GetLangField(BasicEnv.status_tbl[switch_mdl.status], BasicEnv.lang);
+                        var content = "N/A";
+                        if(switch_mdl.status == "ON") {
+                            content = dstring.substitute('<img src="/imgs/${status}.png" style="vertical-align:middle"></img>',
+                                {'status': "on_status"});
+                        }
+                        else if(switch_mdl.status == "OFF") {
+                            content = dstring.substitute('<img src="/imgs/${status}.png" style="vertical-align:middle"></img>',
+                                {'status': "off_status"});
+                        }
+                        else if(switch_mdl.status == "OFFLINE") {
+                            content = dstring.substitute('<img src="/imgs/${status}.png" style="vertical-align:middle"></img>',
+                                {'status': "offline_status"});
+                        }
+                        else {
+                            content = "N/A";
+                        }
+                        if(cell_node.innerHTML !== content) {
+                            cell_node.innerHTML = content;
+                        }
+                    };
+
+                    var SetSwitchGridRemainingSeconds = function(switch_mdl, cell_node) {
+                        var content = "";
+                        if(switch_mdl.remaining_seconds > 0 && switch_mdl.status == "ON") {
+                            content = rtutils.seconds2hhmmss(switch_mdl.remaining_seconds);
+                        }
+                        else {
+                            content = "N/A";
+                        }
+                        if(cell_node.innerHTML !== content) {
+                            cell_node.innerHTML = content;
+                        }
+                    };
+
+                    var SetSwitchGridNameCell = function(switch_mdl, cell_node) {
+                        var content = dstring.substitute('<img src="/imgs/${iconid}.png" style="vertical-align:middle"></img>&nbsp;${name}',
+                                {'iconid': switch_mdl.iconid, 'name': switch_mdl.name});
+                        if(cell_node.innerHTML !== content) {
+                            cell_node.innerHTML = content;
+                        }
+                    };
+
+                    var SetSwitchGridCellsHelper = function (switch_items) {
+                        (function (mdls) {
+                            for (var i = 0; i !== mdls.length; ++i) {
+                                var namecell = BasicEnv.switch_grid.cell(mdls[i].id, "1");
+                                if (namecell.element) {
+                                    SetSwitchGridNameCell(mdls[i], namecell.element);
+                                }
+                            }
+                        })(switch_items);
+
+                        (function(mdls) {
+                            for (var i = 0; i !== mdls.length; ++i) {
+                                var namecell = BasicEnv.switch_grid.cell(mdls[i].id, "2");
+                                if (namecell.element) {
+                                    namecell.element.innerHTML = mdls[i].tag;
+                                }
+                            }
+                        })(switch_items);
+
+                        (function (mdls) {
+                            for (var i = 0; i !== mdls.length; ++i) {
+                                var status_cell = BasicEnv.switch_grid.cell(mdls[i].id, "3");
+                                if (status_cell.element) {
+                                    SetSwitchGridStatusCell(mdls[i], status_cell.element);
+                                }
+                            }
+
+                        })(switch_items);
+                        (function (mdls) {
+                            for (var i = 0; i !== mdls.length; ++i) {
+                                var secs_cell = BasicEnv.switch_grid.cell(mdls[i].id, "4");
+                                if (secs_cell.element) {
+                                    SetSwitchGridRemainingSeconds(mdls[i], secs_cell.element);
+                                }
+                            }
+                        })(switch_items);
+                    };
+
+                    var SetSwitchGridCells = function () {
+                        var switch_items = BasicEnv.switch_store.fetchSync();
+                        SetSwitchGridCellsHelper(switch_items);
+                    };
+
+                    var SyncSwitch = function (status_only) {
+                        return rtutils.Rpc2Deferred(em_rpc.GetSwitch({"token": BasicEnv.sessionid})).then(
+                            function (result) {
+                                var devs = result;
+                                var matched_count = 0;
+                                if (devs.length > 0) {
+                                    for(var i = 0; i!==devs.length; ++i) {
+                                        var switch_tbl = BasicEnv.switch_store.getSync(devs[i].id);
+                                        if(switch_tbl) {
+                                            matched_count += 1;
+                                            rtutils.Mixin(switch_tbl, devs[i], ["status", "remaining_seconds", "vals",
+                                                                                        "name", "tag"]);
+                                        }
+                                        else {
+                                            BasicEnv.switch_store.putSync(Switch2GridItem(devs[i]));
+                                        }
+                                    }
+                                    console.log(dstring.substitute("${0}: ${1}", {"0": matched_count, "1": devs.length}));
+                                    if(matched_count !== devs.length) {
+                                        BasicEnv.switch_grid.refresh();
+                                    }
+                                    else {
+                                        SetSwitchGridCells();
+                                    }
+                                }
+                            },
+                                function (err) {
+                                    rtutils.ReloadWhenExpired(err);
+                                    console.log(err);
+                                }
+                            );
+                    };
+
+                    var RenderValveGridRow = function (row, args) {
+                        query(".field-name", row).forEach(function(node) {
+                            SetSwitchGridNameCell(args[0], node);
+                        });
+
+                        query(".field-status", row).forEach(function (node) {
+                            SetSwitchGridStatusCell(args[0], node);
+                        });
+
+                        query(".field-remaining_seconds", row).forEach(function(node) {
+                            SetSwitchGridRemainingSeconds(args[0], node);
+                        });
+                        return row;
+                    };
+
+                    var InitValveGrid = function () {
+                        BasicEnv.switch_grid = new declare([Grid, Selection, Keyboard, Editor, ColumnHider])({
+                            columns: rtutils.GetLangField(BasicEnv.switch_col_tbl, BasicEnv.lang),
+                            selectionMode: "single",
+                            cellNavigation: true,
+                            collection: BasicEnv.switch_store,
+                            minRowsPerPage: 200
+                        }, "switch_grid_node");
+                        BasicEnv.switch_grid.startup();
+                        aspect.after(BasicEnv.switch_grid, "renderRow", function (row, args) {
+                            return RenderValveGridRow(row, args);
+                        });
+                        on(BasicEnv.switch_grid, "dgrid-select", function (evt) {
+                            if (evt.cells[0].column.field == "id") {
+                            }
+                            else {
+                            }
+                        });
+                    };
+
+                    var InitMgrs = function () {
+                        BasicEnv.poll_timer = new dxtiming.Timer(3*1000);
+                        BasicEnv.poll_timer.onTick = function () {
+                            SyncSwitch(true);
+                        };
+                    };
+
+                    var RefreshApp = function () {
+                        BasicEnv.standby.show();
+                        var defer_obj = SyncSwitch(false);
+                        defer_obj.then(
+                                function(flag) {
+                                    BasicEnv.standby.hide();
+                                    BasicEnv.poll_timer.start();
+                                },
+                                function(err) {
+                                    BasicEnv.standby.hide();
+                                    console.log(err);
+                                }
+                        );
+                    };
+
+                    var AfterLogin = function () {
+                        InitValveGrid();
+                        InitMgrs();
+                        setTimeout(function () {
+                            RefreshApp();
+                        }, 1500);
+                    };
+                    InitEnv();
+                    TranslateUI();
+                    AfterLogin();
+
+                    on(BasicEnv.open_valve_btn_node, "click", function (evt) {
+                        var devids = BasicEnv.switch_store.filter({"watched": true}).select("id").fetchSync();
+                        if (devids.length > 0) {
+                            var para = {"token": BasicEnv.sessionid, "switchids": devids, "working_seconds": -1};
+                            var working_secs = registry.byId("open_duration_input_node").get("value");
+                            if(!dojox.validate.isInRange(working_secs, {min: 15, max: 99999})) {
+                                rtutils.ShowMsgBox(BasicEnv.msg_box, rtutils.GetLangField(multi_lang.errs.number_format, BasicEnv.lang));
+                                return false;
+                            }
+                            else {
+                                para.working_seconds = parseInt(working_secs);
+                            }
+                            BasicEnv.standby.show();
+                            var defer_obj = rtutils.Rpc2Deferred(em_rpc.OpenSwitch(para));
+                            defer_obj.then(
+                                    function (result) {
+                                        BasicEnv.standby.hide();
+                                    },
+                                    function (err) {
+                                        BasicEnv.standby.hide();
+                                        rtutils.ReloadWhenExpired(err);
+                                        if(err.declaredType == "NoRight") {
+                                            rtutils.ShowMsgBox(BasicEnv.msg_box, rtutils.GetLangField(multi_lang.errs.no_right, BasicEnv.lang));
+                                        }
+                                        else {
+                                            rtutils.ShowMsgBox(BasicEnv.msg_box, rtutils.GetLangField(multi_lang.errs.server_error, BasicEnv.lang));
+                                        }
+                                    }
+                            );
+                        }
+                        else {
+                            rtutils.ShowMsgBox(BasicEnv.msg_box, rtutils.GetLangField(multi_lang.msgs["please_select_relay_switch"], BasicEnv.lang));
+                        }
+                    });
+
+                    on(BasicEnv.close_valve_btn_node, "click", function (evt) {
+                        var devids = BasicEnv.switch_store.filter({"watched": true}).select("id").fetchSync();
+                        if (devids.length > 0) {
+                            var para = {"token": BasicEnv.sessionid, "switchids": devids};
+                            BasicEnv.standby.show();
+                            var defer_obj = rtutils.Rpc2Deferred(em_rpc.CloseSwitch(para));
+                            defer_obj.then(
+                                    function (result) {
+                                        BasicEnv.standby.hide();
+                                        for(var i = 0; i!==result.length; ++i) {
+                                            var valve = BasicEnv.switch_store.getSync(result[i].id);
+                                            if (valve) {
+                                                lang.mixin(valve, result);
+                                                BasicEnv.switch_grid.refresh();
+                                            }
+                                        }
+                                    },
+                                    function (err) {
+                                        BasicEnv.standby.hide();
+                                        rtutils.ReloadWhenExpired(err);
+                                        if(err.declaredType == "NoRight") {
+                                            rtutils.ShowMsgBox(BasicEnv.msg_box, rtutils.GetLangField(multi_lang.errs.no_right, BasicEnv.lang));
+                                        }
+                                        else if(err.declaredType == "Timeout") {
+                                            rtutils.ShowMsgBox(BasicEnv.msg_box, rtutils.GetLangField(multi_lang.errs.timeout, BasicEnv.lang));
+                                        }
+                                        else {
+                                            rtutils.ShowMsgBox(BasicEnv.msg_box, rtutils.GetLangField(multi_lang.errs.server_error, BasicEnv.lang));
+                                        }
+                                    }
+                            );
+                        }
+                        else {
+                            rtutils.ShowMsgBox(BasicEnv.msg_box, rtutils.GetLangField(multi_lang.msgs["please_select_relay_switch"], BasicEnv.lang));
+                        }
+                    });
+
+                    on(BasicEnv.schedule_btn_node, "click", function(evt) {
+                        var devids = BasicEnv.switch_store.filter({"watched": true}).select("id").fetchSync();
+                        if(devids.length > 0) {
+                            rtutils.AttachDialog(BasicEnv.dialog, BasicEnv.edit_schedule_ui);
+                            BasicEnv.edit_schedule_ui.SetSwitchIds(devids);
+                            BasicEnv.edit_schedule_ui.ResetUI();
+                            BasicEnv.dialog.show();
+                        }
+                        else {
+                            rtutils.ShowMsgBox(BasicEnv.msg_box, rtutils.GetLangField(multi_lang.msgs["please_select_relay_switch"], BasicEnv.lang));
+                        }
+                    });
+
+                    on(BasicEnv.edit_schedule_ui, "set_schedule", function(evt) {
+                        var d_obj = rtutils.Rpc2Deferred(em_rpc.AddSchedule({"token":BasicEnv.sessionid, "schedule": evt.data}));
+                        rtutils.ShowStandby(BasicEnv.standby, BasicEnv.edit_schedule_ui.domNode);
+                        d_obj.then(
+                                function(result) {
+                                    rtutils.HideStandby(BasicEnv.standby, "main_ui_node");
+                                    if(result.switchids.length > 0) {
+                                        var f_obj = new BasicEnv.switch_store.Filter();
+                                        var switch_names = BasicEnv.switch_store.filter(f_obj.in('id', result.switchids)).select("name").fetchSync();
+                                        BasicEnv.edit_schedule_ui.SetHint(switch_names.join(',')+" have conflict schedule");
+                                    }
+                                    else {
+                                        BasicEnv.edit_schedule_ui.SetHint("ok");
+                                    }
+                                },
+
+                                function(err) {
+                                    rtutils.HideStandby(BasicEnv.standby, "main_ui_node");
+                                    BasicEnv.edit_schedule_ui.SetHint(rtutils.GetLangField(multi_lang.errs["server_error"], BasicEnv.lang))
+                                }
+                        );
+                    });
+
+                    on(dom.byId("schedule_view_url_node"), "click", function(evt) {
+                        evt.preventDefault();
+                        window.open(BasicEnv.curr_location+BasicEnv.schedule_view_url, BasicEnv.schedule_view_url);
+                    });
+
+                    on(dom.byId("set_cond_action_view_url_node"), "click", function(evt) {
+                        evt.preventDefault();
+                        window.open(BasicEnv.curr_location+BasicEnv.set_sensor_trigger_view_url, BasicEnv.set_sensor_trigger_view_url);
+
+                    });
+
+                    on(dom.byId("view_monthly_switch_usage_url_node"), "click", function(evt) {
+                        evt.preventDefault();
+                        window.open(BasicEnv.curr_location+BasicEnv.view_monthly_switch_usage_url, BasicEnv.view_monthly_switch_usage_url);
+                    });
+
+                    on(dom.byId("goto_em_sensor_url_node"), "click", function(evt) {
+                        evt.preventDefault();
+                        window.open(BasicEnv.curr_location+BasicEnv.em_sensor_url,
+                                    BasicEnv.em_sensor_url);
+
+                    });
+                });
+            });
+</script>
+</html>
