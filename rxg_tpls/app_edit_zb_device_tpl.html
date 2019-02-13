@@ -23,7 +23,6 @@
         //global env here
         var BasicEnv = {templatePath: location.pathname.match(/^\//) + "templates",
                         rgy_template_path: location.pathname.match(/^\//) + "{{ app_template_dir }}"};
-        BasicEnv.sessionid = "{{ sessionid }}";
         BasicEnv.edit_mode = "{{ edit_mode }}";
         BasicEnv.deviceid = "{{ deviceid }}";
     </script>
@@ -143,7 +142,9 @@ require(["dojo/parser", "dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-st
 
                 var GetDevice = function(deviceid) {
                     BasicEnv.standby.show();
-                    rtutils.Rpc2Deferred(zb_dev_rpc.GetDevice({"token": BasicEnv.sessionid, "deviceid": deviceid})).then(
+                    rtutils.Rpc2Deferred(zb_dev_rpc.GetDevice(
+                        {//"token": BasicEnv.sessionid,
+                            "deviceid": deviceid})).then(
                             function(result) {
                                 BasicEnv.standby.hide();
                                 SetUI(result);
@@ -182,7 +183,9 @@ require(["dojo/parser", "dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-st
 
                 var SetDevice = function(device) {
                     BasicEnv.standby.show();
-                    var deferobj = rtutils.Rpc2Deferred(zb_dev_rpc.SetDevice({"token": BasicEnv.sessionid, "device": device}));
+                    var deferobj = rtutils.Rpc2Deferred(zb_dev_rpc.SetDevice(
+                        {//"token": BasicEnv.sessionid,
+                            "device": device}));
                     deferobj.then(
                             function(result) {
                                 rtutils.HideStandby(BasicEnv.standby, "main_window");

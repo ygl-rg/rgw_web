@@ -10,8 +10,6 @@
     <link rel="stylesheet" href="/jslib/dgrid/css/dgrid.css">
     <link rel="stylesheet" href="/jslib/dgrid/css/skins/claro.css">
     <link rel="stylesheet" href="/jslib/dijit/themes/claro/claro.css">
-    <link rel="stylesheet" href="/{{ app_css_dir }}/dgrid_zb_device_adm_cols.css">
-    <link rel="stylesheet" href="/{{ app_css_dir }}/dijit_btns.css">
     <script>
         var dojoConfig= { parseOnLoad: true, async: true,
             packages: [
@@ -26,7 +24,6 @@
         //global env here
         var BasicEnv = {templatePath: location.pathname.match(/^\//) + "templates",
                         rxg_template_path: location.pathname.match(/^\//) + "{{ app_template_dir }}"};
-        BasicEnv.sessionid = "{{ sessionid }}";
         BasicEnv.curr_location = location.pathname.match(/^\//);
         BasicEnv.edit_zb_device_url = "{{ edit_zb_dev_url }}";
         BasicEnv.op_log_url = "{{ op_log_url }}";
@@ -52,6 +49,33 @@
             width: 100%;
             height: 100%;
             padding: 0;
+        }
+    </style>
+    <style>
+        .field-watched {
+            width: 8%;
+        }
+
+        .field-id {
+            text-align: center;
+        }
+
+        .field-nid {
+            width: 7em;
+            text-align: center;
+        }
+
+        .field-device_no {
+            text-align: center;
+        }
+
+        .field-name {
+            text-align: center;
+            font-family: "Khmer UI";
+        }
+
+        .field-cts {
+            text-align: center;
         }
     </style>
 </head>
@@ -186,7 +210,9 @@ require(["dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-style", "dojo/asp
                 var searchData = function(searchinfo) {
                     BasicEnv.standby.show();
                     BasicEnv.device_checkbox_node.set("checked", false);
-                    var deferobj = rtutils.Rpc2Deferred(zb_dev_rpc.SearchDevice({"token": BasicEnv.sessionid, "arg": searchinfo}));
+                    var deferobj = rtutils.Rpc2Deferred(zb_dev_rpc.SearchDevice({
+                        //"token": BasicEnv.sessionid,
+                        "arg": searchinfo}));
                     return deferobj.then(function(result) {
                                 BasicEnv.standby.hide();
                                 var dataset = darray.map(result, function(item) {
@@ -253,7 +279,7 @@ require(["dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-style", "dojo/asp
                     }
                     else {
                         BasicEnv.standby.show();
-                        var arg = {"token": BasicEnv.sessionid,
+                        var arg = { "token": BasicEnv.sessionid,
                                     "deviceids": ids};
                         rtutils.Rpc2Deferred(zb_dev_rpc.RemoveDevice(arg)).then(
                                 function(result) {
@@ -278,7 +304,8 @@ require(["dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-style", "dojo/asp
                     }
                     else {
                         BasicEnv.standby.show();
-                        var arg = {"token": BasicEnv.sessionid, "deviceids": ids};
+                        var arg = {"token": BasicEnv.sessionid,
+                                   "deviceids": ids};
                         rtutils.Rpc2Deferred(zb_dev_rpc.RebootDevice(arg)).then(
                                 function(result) {
                                     BasicEnv.standby.hide();
@@ -299,7 +326,8 @@ require(["dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-style", "dojo/asp
                     }
                     else {
                         BasicEnv.standby.show();
-                        rtutils.Rpc2Deferred(zb_dev_rpc.ResetDevice({"token": BasicEnv.sessionid, "deviceids": ids})).then(
+                        rtutils.Rpc2Deferred(zb_dev_rpc.ResetDevice({//"token": BasicEnv.sessionid,
+                                                                      "deviceids": ids})).then(
                                 function(result) {
                                     BasicEnv.standby.hide();
                                     for(var i = 0; i!==ids.length; ++i) {

@@ -26,7 +26,6 @@
         //global env here
         var BasicEnv = {templatePath: location.pathname.match(/^\//) + "templates",
                         rxg_template_path: location.pathname.match(/^\//) + "{{ app_template_dir }}"};
-        BasicEnv.sessionid = "{{ sessionid }}";
         BasicEnv.moduleid = "{{ moduleid }}";
         BasicEnv.curr_location = location.pathname.match(/^\//);
     </script>

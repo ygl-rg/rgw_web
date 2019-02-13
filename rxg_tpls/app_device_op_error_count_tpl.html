@@ -10,7 +10,6 @@
     <link rel="stylesheet" href="/jslib/dojo/resources/dojo.css">
     <link rel="stylesheet" href="/jslib/dgrid/css/dgrid.css">
     <link rel="stylesheet" href="/jslib/dgrid/css/skins/claro.css">
-    <link rel="stylesheet" href="/css/app.css">
     <script src="/js/origin_patch.js"></script>
     <script type="text/javascript"
             src="/jslib/My9748/WdatePicker.js">
@@ -36,7 +35,6 @@
             imgpath: location.pathname.match(/^\//) + "imgs",
             standby: undefined
         };
-        BasicEnv.sessionid = "{{ sessionid }}";
         BasicEnv.op_log_url = "{{ op_log_url }}";
     </script>
 
@@ -169,9 +167,10 @@
                         var stop_str = dom.byId("stop_time_node").value;
                         if (start_str && stop_str) {
                             BasicEnv.standby.show();
-                            var para = {"start_ts": rtutils.date2ts(new Date(start_str)),
-                                        "stop_ts": rtutils.date2ts(new Date(stop_str)),
-                                        "token": BasicEnv.sessionid};
+                            var para = {//"token": BasicEnv.sessionid,
+                                        "start_ts": rtutils.date2ts(new Date(start_str)),
+                                        "stop_ts": rtutils.date2ts(new Date(stop_str))
+                                        };
                             var defer_obj = rtutils.Rpc2Deferred(zb_device_rpc.GetDeviceOpErrorCount(para));
                             defer_obj.then(
                                     function(result) {

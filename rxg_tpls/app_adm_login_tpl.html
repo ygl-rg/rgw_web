@@ -51,13 +51,6 @@
         <div data-dojo-type="dijit/form/Form" method="post" encType="multipart/form-data"
              action="{{ loginurl }}" id="login_node">
                 <label style="color: blue; font-weight: bold">Sys Adm|系统管理</label>
-                <table style="width: 100%; margin-top: 5px;">
-                    <tr>
-                        <td><input data-dojo-type="dijit/form/TextBox" name="pwd" id="pwd_node"
-                            data-dojo-props='trim:true,placeHolder:"password"'
-                            type="password" style="width:10.5em;"/></td>
-                    </tr>
-                </table>
                 <div style="margin-top: 0.5em;">
                     <div>
                         {% for idx, adm_type_rec in enumerate(adm_types) %}
@@ -84,7 +77,7 @@
                     </div>
                 </div>
                 <div style="margin-top: 0.5em;">
-                    <button data-dojo-type="dijit/form/Button" type="submit">login|登入</button>
+                    <button data-dojo-type="dijit/form/Button" type="submit">Access</button>
                 </div>
                 <div style="color:grey;">
                     Cookies must be enabled|必须启用Cookies

@@ -24,7 +24,6 @@
         //global env here
         var BasicEnv = {templatePath: location.pathname.match(/^\//) + "templates",
                         rxg_template_path: location.pathname.match(/^\//) + "{{ app_template_dir }}"};
-        BasicEnv.sessionid = "{{ sessionid }}";
         BasicEnv.curr_location = location.pathname.match(/^\//);
         BasicEnv.sync_zb_device_url = "{{ sync_zb_dev_url }}";
         BasicEnv.restore_module_url = "{{ restore_module_url }}";
@@ -152,7 +151,9 @@ require(["dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-style", "dojo/asp
 
                 var searchData = function(list_no) {
                     BasicEnv.standby.show();
-                    var deferobj = rtutils.Rpc2Deferred(zb_module_rpc.ListModule({"token": BasicEnv.sessionid, "list_no": list_no}));
+                    var deferobj = rtutils.Rpc2Deferred(zb_module_rpc.ListModule(
+                        {//"token": BasicEnv.sessionid,
+                            "list_no": list_no}));
                     return deferobj.then(function(result) {
                                 BasicEnv.standby.hide();
                                 var dataset = darray.map(result, function(item) {
@@ -184,7 +185,8 @@ require(["dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-style", "dojo/asp
                     var moduleids = BasicEnv.store.filter({"watched": true}).select("id").fetchSync();
                     if(moduleids.length > 0) {
                         BasicEnv.standby.show();
-                        var arg = {"token": BasicEnv.sessionid, "moduleid": moduleids[0]};
+                        var arg = {//"token": BasicEnv.sessionid,
+                                   "moduleid": moduleids[0]};
                         var defer_obj = rtutils.Rpc2Deferred(zb_module_rpc.RebootModule(arg));
                         defer_obj.then(
                             function(result) {
@@ -203,7 +205,7 @@ require(["dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-style", "dojo/asp
                     var moduleids = BasicEnv.store.filter({"watched": true}).select("id").fetchSync();
                     if(moduleids.length > 0) {
                         BasicEnv.standby.show();
-                        var arg = {"token": BasicEnv.sessionid,
+                        var arg = {//"token": BasicEnv.sessionid,
                                    "moduleid": moduleids[0]};
                         var defer_obj = rtutils.Rpc2Deferred(zb_module_rpc.ResetModule(arg));
                         defer_obj.then(
@@ -223,7 +225,8 @@ require(["dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-style", "dojo/asp
                     var moduleids = BasicEnv.store.filter({"watched": true}).select("id").fetchSync();
                     if(moduleids.length > 0) {
                         BasicEnv.standby.show();
-                        var arg = {"token": BasicEnv.sessionid, "moduleid": moduleids[0]};
+                        var arg = {//"token": BasicEnv.sessionid,
+                                   "moduleid": moduleids[0]};
                         var defer_obj = rtutils.Rpc2Deferred(zb_module_rpc.BackupModule(arg));
                         defer_obj.then(
                             function(result) {
