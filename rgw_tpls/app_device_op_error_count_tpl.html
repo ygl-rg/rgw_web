@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ title }}</title>
+    <meta http-equiv="content-type" content="text/html" charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+
+    <link rel="stylesheet" href="/jslib/dijit/themes/claro/claro.css">
+    <link rel="stylesheet" href="/jslib/dojo/resources/dojo.css">
+    <link rel="stylesheet" href="/jslib/dgrid/css/dgrid.css">
+    <link rel="stylesheet" href="/jslib/dgrid/css/skins/claro.css">
+    <script src="/js/origin_patch.js"></script>
+    <script type="text/javascript"
+            src="/jslib/My9748/WdatePicker.js">
+    </script>
+    <script>
+        var dojoConfig = {
+            parseOnLoad: true, async: true,
+            packages: [
+                {"name": "shimmy", "location": location.pathname.match(/^\//) + "jslib/shimmy"},
+                {"name": "roundgis", "location": location.pathname.match(/^\//) + "js"},
+                {"name": "dgrid", "location": location.pathname.match(/^\//) + "jslib/dgrid"},
+                {"name": "dstore", "location": location.pathname.match(/^\//) + "jslib/dstore"},
+                {"name": "rgw", "location": location.pathname.match(/^\//) + "{{ app_js_dir }}"}
+            ]
+        };
+    </script>
+    <script>
+        //global env here
+        var BasicEnv = {
+            curr_location: location.pathname.match(/^\//),
+            templatePath: location.pathname.match(/^\//) + "templates",
+            rgw_template_path: location.pathname.match(/^\//) + "{{ app_template_dir }}",
+            imgpath: location.pathname.match(/^\//) + "imgs",
+            standby: undefined
+        };
+        BasicEnv.op_log_url = "{{ op_log_url }}";
+        BasicEnv.sessionid = "{{ sessionid }}";
+    </script>
+
+    <script src="/jslib/dojo/dojo.js"></script>
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body, #main_ui_node {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        .field-watched {
+            text-align: center;
+            width: 4em;
+        }
+
+        .field-device_no {
+            text-align: center;
+        }
+
+        .field-device_name {
+            text-align: center;
+        }
+
+        .field-error_count {
+            text-align: center;
+        }
+    </style>
+</head>
+<body class="claro" id="body_node">
+<div id="main_ui_node">
+    <div style="border-color: blue; border-style: solid; border-width: 1px;">
+        <div>
+            <input type="text" id="start_time_node" required="true" readonly />
+            <input type="text" id="stop_time_node" required="true" readonly />
+            <button data-dojo-type="dijit/form/Button"
+                    id="query_btn_node">search|搜索</button>
+            <button data-dojo-type="dijit/form/Button" id="log_btn_node">op log|操作记录</button>
+        </div>
+    </div>
+
+    <div style="margin-top: 5px;height: 88%;">
+        <div id="grid_node" style="height: 100%;"></div>
+    </div>
+</div>
+<div id="standby"></div>
+</body>
+<script>
+    require(["dojo/parser", "dojo/_base/declare", "dojo/_base/lang", "dojo/window", "dojo/on", "dojo/aspect", "dojo/query",
+                "dojo/dom", "dojo/dom-construct", "dojo/dom-class", "dojo/dom-geometry", "dojo/_base/array", "dojo/dom-style", "dojo/Deferred", "dojo/promise/all",
+                "dijit/registry", "dijit/layout/ContentPane",
+                "dijit/form/Button", "dijit/Tooltip", "dojox/timing", "dojox/collections/Set",
+                "dojox/widget/Standby",
+                "dgrid/OnDemandGrid", "dgrid/CellSelection", "dgrid/Editor", "dgrid/Keyboard", "dgrid/extensions/ColumnHider",
+                "dstore/Memory",
+                "roundgis/rtutils", "roundgis/dojo_utils",
+                "rgw/zb_device_rpc",
+                "rgw/multi_lang",
+                "dojo/ready"],
+            function (parser, declare, lang, dwin, on, aspect, query, dom, domc, domclass, dgeom, darray, domstyle, Deferred, all, registry,
+                      ContentPane, Button, Tooltip,
+                      dxtiming, Set, Standby, Grid, Selection, Editor, Keyboard, ColumnHider, Memory,
+                      rtutils, dojo_utils, zb_device_rpc, multi_lang, ready) {
+                ready(function () {
+                    var InitEnv = function () {
+                        BasicEnv.standby = new Standby({target: "main_ui_node"});
+                        document.body.appendChild(BasicEnv.standby.domNode);
+                        BasicEnv.standby.startup();
+                        BasicEnv.columns = [
+                            {label: " ",
+                                field: "watched",
+                                autoSave: true,
+                                unhidable: true,
+                                editor: "checkbox"
+                            },
+                            {field: "device_name", label: "Name|名字"},
+                            {field: "device_no", label: "Type|类型"},
+                            {field: "error_count", label: "Error Count|错误次数"}
+                        ];
+                        BasicEnv.main_store = new Memory({idProperty: "deviceid"});
+                    };
+
+                    var RenderGridRow = function(row, args) {
+                        //query(".field-error_count", row).forEach(function(node) {
+                        //    node.innerHTML = args[0].error_rate.toFixed(4);
+                        //});
+                        return row;
+                    };
+
+                    var InitMainGrid = function () {
+                        BasicEnv.main_grid = new declare([Grid, Editor, Selection, Keyboard])({
+                            columns: BasicEnv.columns,
+                            selectionMode: "none",
+                            cellNavigation: true,
+                            collection: BasicEnv.main_store,
+                            minRowsPerPage: 10
+                        }, "grid_node");
+                        BasicEnv.main_grid.startup();
+                        aspect.after(BasicEnv.main_grid, "renderRow", function(row, args) {
+                            return RenderGridRow(row, args);
+                        });
+                    };
+
+                    var RefreshGrid = function (dataset) {
+                        if (dataset) {
+                            BasicEnv.main_store.setData(dataset);
+                        }
+                        BasicEnv.main_grid.refresh();
+                    };
+
+                    InitEnv();
+                    InitMainGrid();
+
+                    on(dom.byId("start_time_node"), "click", function (evt) {
+                        WdatePicker({dateFmt: 'yyyy-MM-dd HH:mm', lang: 'en'});
+                    });
+                    on(dom.byId("stop_time_node"), "click", function (evt) {
+                        WdatePicker({dateFmt: 'yyyy-MM-dd HH:mm', lang: 'en'});
+                    });
+                    on(registry.byId("query_btn_node"), "click", function (evt) {
+                        var start_str = dom.byId("start_time_node").value;
+                        var stop_str = dom.byId("stop_time_node").value;
+                        if (start_str && stop_str) {
+                            BasicEnv.standby.show();
+                            var para = {"token": BasicEnv.sessionid,
+                                        "start_ts": rtutils.date2ts(new Date(start_str)),
+                                        "stop_ts": rtutils.date2ts(new Date(stop_str))
+                                        };
+                            var defer_obj = rtutils.Rpc2Deferred(zb_device_rpc.GetDeviceOpErrorCount(para));
+                            defer_obj.then(
+                                    function(result) {
+                                        BasicEnv.standby.hide();
+                                        var items = darray.map(result, function (val, i) {
+                                            val.watched = false;
+                                            return val;
+                                        });
+                                        RefreshGrid(items);
+                                    },
+                                    function(err) {
+                                        BasicEnv.standby.hide();
+                                        if (err.declaredType == "SessionExpired") {
+                                            alert("please login");
+                                        }
+                                        else {
+                                            alert(err.msg || err.declaredType);
+                                        }
+                                    }
+                            );
+                        }
+                        else {
+                            alert("start time & stop time are required");
+                        }
+                    });
+
+                    on(registry.byId("log_btn_node"), "click", function() {
+                        var deviceids = BasicEnv.main_store.filter({"watched": true}).select("deviceid").fetchSync();
+                        if(deviceids.length == 0) {
+                            alert("select entry first");
+                        }
+                        else {
+                            window.open(BasicEnv.curr_location+BasicEnv.op_log_url+"?deviceid="+deviceids[0], "device op log");
+                        }
+                    });
+                });
+            });
+</script>
+</html>
