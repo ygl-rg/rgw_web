@@ -178,7 +178,7 @@ require(["dojo/parser", "dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-st
 
                 var AddDevice = function(device) {
                     BasicEnv.standby.show();
-                    var deferobj = rtutils.Rpc2Deferred(zb_dev_rpc.AddDevice(BasicEnv.sessionid, {"device": device}));
+                    var deferobj = rtutils.Rpc2Deferred(zb_dev_rpc.AddDevice({"token": BasicEnv.sessionid, "device": device}));
                     deferobj.then(
                             function(result) {
                                 rtutils.HideStandby(BasicEnv.standby, "main_window");
