@@ -431,7 +431,7 @@
                                     function (err) {
                                         BasicEnv.standby.hide();
                                         rtutils.ReloadWhenExpired(err);
-                                        if(err.declaredType == "NoRight") {
+                                        if(err == "no right") {
                                             rtutils.ShowMsgBox(BasicEnv.msg_box, rtutils.GetLangField(multi_lang.errs.no_right, BasicEnv.lang));
                                         }
                                         else {
@@ -465,11 +465,8 @@
                                     function (err) {
                                         BasicEnv.standby.hide();
                                         rtutils.ReloadWhenExpired(err);
-                                        if(err.declaredType == "NoRight") {
+                                        if(err == "no right") {
                                             rtutils.ShowMsgBox(BasicEnv.msg_box, rtutils.GetLangField(multi_lang.errs.no_right, BasicEnv.lang));
-                                        }
-                                        else if(err.declaredType == "Timeout") {
-                                            rtutils.ShowMsgBox(BasicEnv.msg_box, rtutils.GetLangField(multi_lang.errs.timeout, BasicEnv.lang));
                                         }
                                         else {
                                             rtutils.ShowMsgBox(BasicEnv.msg_box, rtutils.GetLangField(multi_lang.errs.server_error, BasicEnv.lang));
