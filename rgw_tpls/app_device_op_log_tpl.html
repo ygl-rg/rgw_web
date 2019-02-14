@@ -31,7 +31,7 @@
         var BasicEnv = {
             curr_location: location.pathname.match(/^\//),
             templatePath: location.pathname.match(/^\//) + "templates",
-            rxg_template_path: location.pathname.match(/^\//) + "{{ app_template_dir }}",
+            rgw_template_path: location.pathname.match(/^\//) + "{{ app_template_dir }}",
             imgpath: location.pathname.match(/^\//) + "imgs",
             standby: undefined
         };
@@ -95,13 +95,12 @@
                 "dgrid/OnDemandGrid", "dgrid/CellSelection", "dgrid/Editor", "dgrid/Keyboard", "dgrid/extensions/ColumnHider",
                 "dstore/Memory",
                 "roundgis/rtutils", "roundgis/dojo_utils",
-                "rxg/zb_device_rpc",
-                "rxg/multi_lang",
+                "rgw/zb_device_rpc",
                 "dojo/ready"],
             function (parser, declare, lang, dwin, on, aspect, query, dom, domc, domclass, dgeom, darray, domstyle, Deferred, all, registry,
                       ContentPane, Button, Tooltip,
                       dxtiming, Set, Standby, Grid, Selection, Editor, Keyboard, ColumnHider, Memory,
-                      rtutils, dojo_utils, zb_device_rpc, multi_lang, ready) {
+                      rtutils, dojo_utils, zb_device_rpc, ready) {
                 ready(function () {
                     var InitEnv = function () {
                         BasicEnv.standby = new Standby({target: "main_ui_node"});
