@@ -72,10 +72,10 @@
 <div id="main_window" class="rgy_kh_font" data-dojo-type="dijit/layout/BorderContainer" data-dojo-props="design:'headline',gutters:false">
     <div data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'top'">
         <div>
-            <button data-dojo-type="dijit/form/Button" id="all_btn_node">{{ refresh_label }}</button>
-            <button data-dojo-type="dijit/form/Button" id="add_btn_node">{{ add_label }}</button>
-            <button data-dojo-type="dijit/form/Button" id="edit_btn_node">{{ edit_label }}</button>
-            <button data-dojo-type="dijit/form/Button" id="remove_btn_node">{{ remove_label }}</button>
+            <button data-dojo-type="dijit/form/Button" id="all_btn_node">{{ label_tbl['refresh'] }}</button>
+            <button data-dojo-type="dijit/form/Button" id="add_btn_node">{{ label_tbl['add'] }}</button>
+            <button data-dojo-type="dijit/form/Button" id="edit_btn_node">{{ label_tbl['edit'] }}</button>
+            <button data-dojo-type="dijit/form/Button" id="remove_btn_node">{{ label_tbl['remove'] }}</button>
             <label id="hint_node"></label>
         </div>
     </div>
@@ -107,33 +107,14 @@ require(["dojo/parser", "dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-st
                     BasicEnv.store = new Memory({idProperty: "id"});
                     document.body.appendChild(BasicEnv.standby.domNode);
                     BasicEnv.standby.startup();
-
-                    BasicEnv.column_tbl = {
-                            "en": [
-                                {field: "watched", autoSave: true, unhidable: true,
-                                    label: " ",
-                                    editor: "checkbox"},
-                                {field: "name", label: "Name"},
-                                {field: "start_ts", label: "Start"},
-                                {field: "stop_ts", label: "Stop"}
-                            ],
-                            "zh-cn": [
-                                {field: "watched", autoSave: true, unhidable: true,
-                                    label: " ",
-                                    editor: "checkbox"},
-                                {field: "name", label: "名字"},
-                                {field: "start_ts", label: "开始"},
-                                {field: "stop_ts", label: "结束"}
-                            ],
-                            "zh-tw": [
-                                {field: "watched", autoSave: true, unhidable: true,
-                                    label: " ",
-                                    editor: "checkbox"},
-                                {field: "name", label: "名字"},
-                                {field: "start_ts", label: "開始"},
-                                {field: "stop_ts", label: "結束"}
-                            ]
-                        };
+                    BasicEnv.cols = [
+                        {field: "watched", autoSave: true, unhidable: true,
+                            label: " ",
+                            editor: "checkbox"},
+                        {field: "name", label: "{{ label_tbl['name'] }}"},
+                        {field: "start_ts", label: "{{ label_tbl['start'] }}"},
+                        {field: "stop_ts", label: "{{ label_tbl['stop'] }}"}
+                    ];
 
                     BasicEnv.refresh_confirm_dialog = new ConfirmDialog({
                                                          onExecute: function() {
@@ -150,7 +131,7 @@ require(["dojo/parser", "dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-st
                 var initGrid = function() {
                     BasicEnv.grid = new declare([Grid, Selection, Keyboard, ColumnHider, Editor])(
                         {
-                            columns: rtutils.GetLangField(BasicEnv.column_tbl, BasicEnv.lang),
+                            columns: BasicEnv.cols,
                             selectionMode: "none",
                             cellNavigation: true,
                             collection: BasicEnv.store,

@@ -217,42 +217,6 @@ require(["dojo/parser", "dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-st
                         {field: "sensor_name", label: "{{ label_tbl['sensor'] }}"},
                         {field: "expr", label: "{{ label_tbl['condition'] }}"}
                     ];
-                    BasicEnv.sensor_col_tbl = {
-                        "en": [
-                            {
-                                label: " ",
-                                field: "sensor_grid_watched",
-                                autoSave: true,
-                                unhidable: true,
-                                editor: "checkbox"
-                            },
-                            {field: "sensor_name", label: "Name"},
-                            {field: "expr", label: "Expr"}
-                        ],
-                        "zh-cn": [
-                            {
-                                label: " ",
-                                field: "sensor_grid_watched",
-                                autoSave: true,
-                                unhidable: true,
-                                editor: "checkbox"
-                            },
-                            {field: "sensor_name", label: "{{ label_tbl['sensor'] }}"},
-                            {field: "expr", label: "条件"}
-                        ],
-                        "zh-tw": [
-                            {
-                                label: " ",
-                                field: "sensor_grid_watched",
-                                autoSave: true,
-                                unhidable: true,
-                                editor: "checkbox"
-                            },
-                            {field: "sensor_name", label: "{{ label_tbl['sensor'] }}"},
-                            {field: "expr", label: "條件"}
-                        ]
-
-                    };
                     BasicEnv.sensor_store = new Memory({idProperty: "sensorid"});
                     BasicEnv.standby_obj.startup();
                 };
