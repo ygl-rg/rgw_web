@@ -65,8 +65,8 @@
                         <select data-dojo-type="dijit/form/Select"
                                 id="sensor_select_node">
                             {% for idx, tbl in enumerate(sensor_tbls) %}
-                                {% set selected_str = "selected" if idx == 0 else "" %}
-                                <option value="{{ tbl['value'] }}" selected="{{ selected_str }}">{{ tbl['label'] }}</option>
+                                {% set selected_str1 = "selected" if idx == 0 else "" %}
+                                <option value="{{ tbl['value'] }}" selected="{{ selected_str1 }}">{{ tbl['label'] }}</option>
                             {% end %}
                         </select>
                         <select data-dojo-type="dijit/form/Select"
@@ -91,9 +91,6 @@
                             {% for idx, tbl in enumerate(switch_tbls) %}
                                 {% set selected_str = "selected" if idx == 0 else "" %}
                                 <option value="{{ tbl['value'] }}" selected="{{ selected_str }}">{{ tbl['label'] }}</option>
-                                <script>
-                                    console.log("{{ tbl['value'] }}"+" "+"{{ tbl['label'] }}");
-                                </script>
                             {% end %}
                         </select>
                         <select data-dojo-type="dijit/form/Select"
