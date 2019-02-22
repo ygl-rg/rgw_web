@@ -386,7 +386,8 @@ require(["dojo/parser", "dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-st
                 var GetSwitchAction = function() {
                     var action_no = registry.byId("action_select_node").get("value");
                     var res = {'switchid': registry.byId("switch_select_node").get("value"),
-                               'action_no': action_no};
+                               'action_no': action_no,
+                               'working_seconds': null};
                     if(action_no == "ON") {
                         var secs = parseInt(registry.byId("working_seconds_input_node").get("value"));
                         if(!rtutils.IsValidNumber(secs)) {
