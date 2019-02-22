@@ -82,7 +82,7 @@
                     </td>
                 </tr>
                 <tr>
-                    <td>{{ switch_label }}: </td>
+                    <td>{{ label_tbl['switch'] }}: </td>
                     <td>
                         <select data-dojo-type="dijit/form/Select"
                                 id="switch_select_node">
@@ -104,7 +104,7 @@
                     </td>
                 </tr>
                 <tr>
-                    <td>{{ name_label }}: </td>
+                    <td>{{ label_tbl['name'] }}: </td>
                     <td><input data-dojo-type="dijit/form/TextBox"
                             data-dojo-props="trim:true,prpercase:true"
                             type="text"
@@ -112,21 +112,21 @@
                             style="width: 10em;"/></td>
                 </tr>
                 <tr>
-                    <td><label>{{ start_time_label }}:</label></td>
+                    <td><label>{{ label_tbl['start_time'] }}:</label></td>
                     <td><input data-dojo-type="dijit/form/TextBox"
                                data-dojo-props="trim:true,prpercase:true" type="text" style="width:9em;"
                                id="start_time_input_node" readonly />
                     </td>
                 </tr>
                 <tr>
-                    <td><label>{{ stop_time_label }}:</label></td>
+                    <td><label>{{ label_tbl['stop_time'] }}:</label></td>
                     <td><input data-dojo-type="dijit/form/TextBox"
                                data-dojo-props="trim:true,prpercase:true" type="text" style="width:9em;"
                                id="stop_time_input_node" readonly />
                     </td>
                 </tr>
                 <tr>
-                    <td><label>{{ check_interval_label }}:</label></td>
+                    <td><label>{{ label_tbl['check_interval'] }}:</label></td>
                     <td>
                         <select data-dojo-type="dijit/form/Select"
                                 id="check_interval_select_node">
@@ -148,7 +148,7 @@
                     </td>
                 </tr>
                 <tr>
-                    <td><label>message:</label></td>
+                    <td><label>{{ label_tbl['message'] }}:</label></td>
                     <td>
                         <input data-dojo-type="dijit/form/TextBox"
                                data-dojo-props="trim:true,prpercase:true"
@@ -160,12 +160,12 @@
                 <tr>
                     <td colspan="4">
                         <button data-dojo-type="dijit/form/Button"
-                                id="add_sensor_btn_node">{{ update_btn }}</button>
+                                id="add_sensor_btn_node">{{ label_tbl['update_btn'] }}</button>
 
                         <button data-dojo-type="dijit/form/Button"
-                                id="remove_sensor_btn_node">{{ remove_btn }}</button>
+                                id="remove_sensor_btn_node">{{ label_tbl['remove_btn'] }}</button>
                         <button data-dojo-type="dijit/form/Button"
-                                id="ok_btn_node">{{ save_btn }}</button>
+                                id="ok_btn_node">{{ label_tbl['save_btn'] }}</button>
                     </td>
                 </tr>
             </table>
@@ -206,6 +206,17 @@ require(["dojo/parser", "dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-st
                 var InitEnv = function() {
                     BasicEnv.standby_obj = new Standby({target:"main_window"});
                     document.body.appendChild(BasicEnv.standby_obj.domNode);
+                    BasicEnv.cols = [
+                        {
+                            label: " ",
+                            field: "sensor_grid_watched",
+                            autoSave: true,
+                            unhidable: true,
+                            editor: "checkbox"
+                        },
+                        {field: "sensor_name", label: "{{ label_tbl['sensor'] }}"},
+                        {field: "expr", label: "{{ label_tbl['condition'] }}"}
+                    ];
                     BasicEnv.sensor_col_tbl = {
                         "en": [
                             {
@@ -226,7 +237,7 @@ require(["dojo/parser", "dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-st
                                 unhidable: true,
                                 editor: "checkbox"
                             },
-                            {field: "sensor_name", label: "名字"},
+                            {field: "sensor_name", label: "{{ label_tbl['sensor'] }}"},
                             {field: "expr", label: "条件"}
                         ],
                         "zh-tw": [
@@ -237,7 +248,7 @@ require(["dojo/parser", "dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-st
                                 unhidable: true,
                                 editor: "checkbox"
                             },
-                            {field: "sensor_name", label: "名字"},
+                            {field: "sensor_name", label: "{{ label_tbl['sensor'] }}"},
                             {field: "expr", label: "條件"}
                         ]
 
@@ -259,7 +270,7 @@ require(["dojo/parser", "dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-st
 
                 var InitSensorGrid = function() {
                         BasicEnv.sensor_grid = new declare([Grid, Selection, Keyboard, Editor])({
-                            columns: rtutils.GetLangField(BasicEnv.sensor_col_tbl, BasicEnv.lang),
+                            columns: BasicEnv.cols,
                             selectionMode: "single",
                             cellNavigation: true,
                             collection: BasicEnv.sensor_store,
@@ -473,7 +484,7 @@ require(["dojo/parser", "dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-st
                     try {
                         var new_obj = MakeTrigger();
                         if(new_obj.sensors.length == 0) {
-                            throw "no sensor";
+                            throw "{{ label_tbl['no_condition_err'] }}";
                         }
                         else if(new_obj.name.length == 0) {
                             throw "name is blank";
