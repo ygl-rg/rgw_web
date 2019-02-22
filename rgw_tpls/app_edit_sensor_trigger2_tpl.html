@@ -439,6 +439,7 @@ require(["dojo/parser", "dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-st
                 };
 
                 var UpdateSwitchInput = function(switch_mdl) {
+                    console.log(switch_mdl);
                     registry.byId("switch_select_node").set("value", switch_mdl.switchid);
                     registry.byId("action_select_node").set("value", switch_mdl.action_no);
                     if(switch_mdl.action_no == "ON") {
