@@ -34,13 +34,13 @@
             imgpath: location.pathname.match(/^\//) + "imgs",
             standby: undefined,
             main_grid: undefined,
-            watched_groupid: -1,
             poll_timer: undefined
         };
         BasicEnv.sessionid = "{{ sessionid }}";
         BasicEnv.sensor_mins_avg_trend_url = "{{ sensor_mins_avg_trend_url }}";
         BasicEnv.sensor_mins_avg_data_url = "{{ sensor_mins_avg_data_url }}";
         BasicEnv.sensor_recent_hours_plotting_url = "{{ sensor_recent_hours_plotting_url }}";
+        BasicEnv.sensor_recent_trend_url = "{{ sensor_recent_trend_url }}";
         BasicEnv.em_url = "{{ em_url }}";
     </script>
 
@@ -93,45 +93,19 @@
         <div style="width: 100%;"
              data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'center'">
             <div style="width: 100%; margin-bottom: 5px;">
-                <a href="_blank" id="sensor_avg_trend_url_node">{{ history_trend_url_label }}</a>
+                <a href="_blank" id="sensor_avg_trend_url_node">{{ label_tbl['history_trend_url'] }}</a>
                 <span style="display: inline-block; width: 4px; height: 1px;"></span>
-                <a href="_blank" id="sensor_avg_data_url_node">{{ history_data_url_label }}</a>
-                <span style="display: inline-block; width: 4px; height: 1px;"></span>
-                <select data-dojo-type="dijit/form/Select"
-                    id="hours_select_node">
-                    {% for idx, hours_tbl in enumerate(hours_tbls) %}
-                        {% if 'selected' in hours_tbl %}
-                            <option value="{{ hours_tbl["value"] }}" selected="selected">{{ hours_tbl["label"] }}</option>
-                        {% else %}
-                            <option value="{{ hours_tbl["value"] }}">{{ hours_tbl["label"] }}</option>
-                        {% end %}
-                    {% end %}
-                </select>
-                <span style="width: 3px;" />
-                <select data-dojo-type="dijit/form/Select"
-                        id="mins_interval_select_node">
-                    {% for idx, mins_interval in enumerate(mins_interval_tbls) %}
-                        {% if 'selected' in mins_interval %}
-                            <option value="{{ mins_interval["value"] }}" selected="selected">{{ mins_interval["label"] }}</option>
-                        {% else %}
-                            <option value="{{ mins_interval["value"] }}">{{ mins_interval["label"] }}</option>
-                        {% end %}
-                    {% end %}
-                </select>
+                <a href="_blank" id="sensor_avg_data_url_node">{{ label_tbl['history_data_url'] }}</a>
                 <button data-dojo-type="dijit/form/Button"
-                        id="plot1_btn_node">{{ plot1_label }}
+                        id="plot1_btn_node">{{ label_tbl['plot1'] }}
                 </button>
                 <button data-dojo-type="dijit/form/Button"
-                        id="plot2_btn_node">{{ plot2_label }}
+                        id="plot2_btn_node">{{ label_tbl['plot2'] }}
                 </button>
-                <a href="_blank" id="goto_em_url_node">{{ goto_label }}</a>
+                <a href="_blank" id="goto_em_url_node">{{ label_tbl['goto'] }}</a>
                 <label id="hint_node"></label>
             </div>
-            <div id="sensor_grid_node" style="height: 85%;"></div>
-        </div>
-        <div id="plotting_container_node" style="width: 100%; height: 56%;"
-             data-dojo-type="dijit/layout/ContentPane"
-             data-dojo-props="region:'bottom', splitter:true, doLayout: true">
+            <div id="sensor_grid_node" style="height: 90%;"></div>
         </div>
     </div>
 </div>
@@ -165,48 +139,19 @@
                         BasicEnv.standby = new Standby({target: "main_ui_node"});
                         document.body.appendChild(BasicEnv.standby.domNode);
                         BasicEnv.standby.startup();
-                        BasicEnv.sensor_col_tbl = {
-                            "en": [
-                                {
-                                    label: " ",
-                                    field: "sensor_grid_watched",
-                                    autoSave: true,
-                                    unhidable: true,
-                                    editor: "checkbox"
-                                },
-                                {field: "sensor_name", label: "Name"},
-                                {field: "tag", label: ""},
-                                {field: "sensor_val", label: "Status"},
-                                {field: "sensor_uts", label: "Time"}
-                            ],
-                            "zh-cn": [
-                                {
-                                    label: " ",
-                                    field: "sensor_grid_watched",
-                                    autoSave: true,
-                                    unhidable: true,
-                                    editor: "checkbox"
-                                },
-                                {field: "sensor_name", label: "名字"},
-                                {field: "tag", label: ""},
-                                {field: "sensor_val", label: "状态"},
-                                {field: "sensor_uts", label: "时间"}
-                            ],
-
-                            "zh-tw": [
-                                {
-                                    label: " ",
-                                    field: "sensor_grid_watched",
-                                    autoSave: true,
-                                    unhidable: true,
-                                    editor: "checkbox"
-                                },
-                                {field: "sensor_name", label: "名字"},
-                                {field: "tag", label: ""},
-                                {field: "sensor_val", label: "狀態"},
-                                {field: "sensor_uts", label: "時間"}
-                            ]
-                        };
+                        BasicEnv.cols = [
+                            {
+                                label: " ",
+                                field: "sensor_grid_watched",
+                                autoSave: true,
+                                unhidable: true,
+                                editor: "checkbox"
+                            },
+                            {field: "sensor_name", label: "{{ label_tbl['name'] }}"},
+                            {field: "tag", label: ""},
+                            {field: "sensor_val", label: "{{ label_tbl['status'] }}"},
+                            {field: "sensor_uts", label: "{{ label_tbl['time'] }}"}
+                        ];
                         BasicEnv.sensor_store = new Memory({idProperty: "id"});
                         BasicEnv.hint_node = dom.byId("hint_node");
                         BasicEnv.dialog = new Dialog();
@@ -247,7 +192,7 @@
                             for (var i = 0; i !== mdls.length; ++i) {
                                 var namecell = BasicEnv.sensor_grid.cell(mdls[i].id, "2");
                                 if (namecell.element) {
-                                    SetTagCell(mdls[i], namecell.element);
+                                    namecell.element.innerHTML = mdls[i].tag;
                                 }
                             }
                         })(switch_items);
@@ -316,7 +261,7 @@
                             SetNameCell(args[0], node);
                         });
                         query(".field-tag", row).forEach(function (node) {
-                            SetTagCell(args[0], node);
+                            node.innerHTML = args[0].tag;
                         });
                         query(".field-sensor_val", row).forEach(function (node) {
                             SetSensorValCell(args[0], node);
@@ -328,17 +273,8 @@
                     };
 
                     var SetNameCell = function (grid_item, cell_node) {
-                        var content = dstring.substitute('<img src="/imgs/${iconid}.png" style="vertical-align:middle"></img>&nbsp;${name}',
+                        cell_node.innerHTML = dstring.substitute('<img src="/imgs/${iconid}.png" style="vertical-align:middle"></img>&nbsp;${name}',
                                     {'iconid': grid_item.iconid, 'name': grid_item.sensor_name});
-                        if(cell_node.innerHTML !== content) {
-                            cell_node.innerHTML = content;
-                        }
-                    };
-
-                    var SetTagCell = function(grid_item, cell_node) {
-                        if(cell_node.innerHTML !== grid_item.tag) {
-                            cell_node.innerHTML = grid_item.tag;
-                        }
                     };
 
                     var SetSensorValCell = function(grid_item, cell_node) {
@@ -346,31 +282,33 @@
                             var precision = rtutils.IsValidNumber(grid_item.val_precision)?grid_item.val_precision:1;
                             return grid_item.sensor_val.toFixed(precision);
                         };
-                        var content = "N/A";
                         if(rtutils.IsValidNumber(grid_item.sensor_val)) {
-                            content = GetValStr()+" "+grid_item.val_unit;
+                            cell_node.innerHTML = GetValStr()+" "+grid_item.val_unit;
                         }
                         else {
-                            content = "N/A";
-                        }
-                        if(cell_node.innerHTML !== content) {
-                            cell_node.innerHTML = content;
+                            cell_node.innerHTML = "N/A";
                         }
                     };
 
                     var SetUtsCell = function(grid_item, cell_node) {
-                        var content = "N/A";
                         if(rtutils.IsValidNumber(grid_item.sensor_uts) && grid_item.sensor_uts > 0) {
-                               content = rtutils.DT2Str4(rtutils.ts2date(grid_item.sensor_uts));
-                        }
-                        if(cell_node.innerHTML !== content) {
-                            cell_node.innerHTML = content;
-                        }
+                               cell_node.innerHTML = rtutils.DT2Str4(rtutils.ts2date(grid_item.sensor_uts));
+                               if((rtutils.date2ts(new Date()) - 90) > grid_item.sensor_uts) {
+                                   domstyle.set(cell_node, "color", "red");
+                               }
+                               else {
+                                    domstyle.set(cell_node, "color", "blue");
+                               }
+
+                           }
+                           else {
+                               cell_node.innerHTML = "";
+                           }
                     };
 
                     var InitSensorGrid = function() {
                         BasicEnv.sensor_grid = new declare([Grid, Selection, Keyboard, Editor, ColumnHider])({
-                            columns: rtutils.GetLangField(BasicEnv.sensor_col_tbl, BasicEnv.lang),
+                            columns: BasicEnv.cols,
                             selectionMode: "single",
                             cellNavigation: true,
                             collection: BasicEnv.sensor_store,
@@ -412,66 +350,6 @@
                         }, 1500);
                     };
 
-                    var RefreshPlotting1 = function() {
-                        var obj = registry.byId("plotting_container_node");
-                        var sensorids = BasicEnv.sensor_store.filter({"sensor_grid_watched": true}).select("id").fetchSync();
-                        if(sensorids.length > 0) {
-                            domc.empty(obj.domNode);
-                            rtutils.ShowStandby(BasicEnv.standby);
-                            var d_obj = rtutils.Rpc2Deferred(em_rpc.FindSensorMinsAvgLog({
-                                'hours': parseInt(registry.byId("hours_select_node").get("value")),
-                                'mins_interval': parseInt(registry.byId("mins_interval_select_node").get("value")),
-                                'sensorids': sensorids
-                            }));
-                            d_obj.then(
-                                function(result) {
-                                    rtutils.HideStandby(BasicEnv.standby);
-                                    var chart_height = 86*1.0/sensorids.length;
-                                    for(var i = 0; i!=sensorids.length; ++i) {
-                                        var trend_block = new SensorTrendBlockUI({
-                                            sensor_mdl: result.sensors_tbl[sensorids[i].toString()],
-                                            sensor_data_rows: result.log_tbl[sensorids[i].toString()],
-                                            ts_series: result.ts_series
-                                        });
-                                        trend_block.startup();
-                                        //domc.place(trend_block.domNode, obj.domNode);
-                                        obj.addChild(trend_block);
-                                        trend_block.SetHeight(chart_height.toFixed(0)+"%");
-                                        trend_block.SetWidth("98%");
-                                        domc.create("div", {"style": "display: block; padding: 0.6em 0;"}, obj.domNode);
-                                        trend_block.Update();
-                                    }
-                                },
-
-                                function(err) {
-                                    rtutils.HideStandby(BasicEnv.standby);
-                                    console.log(err);
-                                }
-                            );
-
-                        }
-                    };
-
-                    var RefreshPlotting2 = function() {
-                        var obj = registry.byId("plotting_container_node");
-                        var box = dgeom.getContentBox(obj.domNode);
-                        var sensorids = BasicEnv.sensor_store.filter({"sensor_grid_watched": true}).select("id").fetchSync();
-                        if(sensorids.length > 0) {
-                            domc.empty(obj.domNode);
-                            rtutils.ShowStandby(BasicEnv.standby);
-                            var src_url_base = BasicEnv.curr_location+BasicEnv.sensor_recent_hours_plotting_url;
-                            var chart_height = box.h*0.9/sensorids.length;
-                            for(var i = 0; i!==sensorids.length; ++i) {
-                                var src_url = src_url_base + "?width="+box.w*0.95+"&height="+chart_height+"&tz_offset="+rtutils.GetTimezoneOffset();
-                                src_url +="&hours="+registry.byId("hours_select_node").get("value");
-                                src_url +="&mins="+registry.byId("mins_interval_select_node").get("value");
-                                src_url +="&sensorids="+djson.stringify([sensorids[i]]);
-                                var embed_obj = domc.create("embed", {"src": src_url}, obj.domNode);
-                            }
-                            rtutils.HideStandby(BasicEnv.standby);
-                        }
-                    };
-
                     InitEnv();
                     TranslateUI();
                     AfterLogin();
@@ -495,11 +373,29 @@
                     }));
 
                     on(registry.byId("plot1_btn_node"), "click", lang.hitch(this, function(evt) {
-                        RefreshPlotting1();
+                        evt.preventDefault();
+                        var sensorids = BasicEnv.sensor_store.filter({"sensor_grid_watched": true}).select("id").fetchSync();
+                        if(sensorids.length > 0) {
+                            var args_part = dstring.substitute("?token=${token}&lang=${lang_code}&sensorids=${sensorids}&plotting_no=1",
+                                                               {token: BasicEnv.sessionid,
+                                                                lang_code: BasicEnv.lang,
+                                                                sensorids: djson.stringify(sensorids)});
+                            window.open(BasicEnv.curr_location+BasicEnv.sensor_recent_trend_url+args_part,
+                                        BasicEnv.sensor_recent_trend_url);
+                        }
                     }));
 
                     on(registry.byId("plot2_btn_node"), "click", lang.hitch(this, function(evt) {
-                        RefreshPlotting2();
+                        evt.preventDefault();
+                        var sensorids = BasicEnv.sensor_store.filter({"sensor_grid_watched": true}).select("id").fetchSync();
+                        if(sensorids.length > 0) {
+                            var args_part = dstring.substitute("?token=${token}&lang=${lang_code}&sensorids=${sensorids}&plotting_no=2",
+                                                               {token: BasicEnv.sessionid,
+                                                                lang_code: BasicEnv.lang,
+                                                                sensorids: djson.stringify(sensorids)});
+                            window.open(BasicEnv.curr_location+BasicEnv.sensor_recent_trend_url+args_part,
+                                        BasicEnv.sensor_recent_trend_url);
+                        }
                     }));
 
                     on(dom.byId("goto_em_url_node"), "click", function(evt) {
