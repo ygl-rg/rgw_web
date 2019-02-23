@@ -51,7 +51,7 @@
     <br><br>
     <table style="margin: 0 auto;">
         <tr>
-            <td>{{ timezone }}:</td>
+            <td>{{ label_tbl['timezone'] }}:</td>
             <td>
                 <select data-dojo-type="dijit/form/Select"
                         id="tz_select_node">
@@ -66,7 +66,7 @@
             </td>
         </tr>
         <tr>
-            <td>{{ password }}:</td>
+            <td>{{ label_tbl['password'] }}:</td>
             <td>
                 <input data-dojo-type="dijit/form/ValidationTextBox"
                        data-dojo-props="trim:true, prpercase:true"
@@ -76,7 +76,7 @@
             </td>
         </tr>
         <tr>
-            <td>{{ email_sender }}:</td>
+            <td>{{ label_tbl['email_sender'] }}:</td>
             <td>
                 <input data-dojo-type="dijit/form/ValidationTextBox"
                        data-dojo-props="trim:true, prpercase:true"
@@ -90,12 +90,12 @@
         <tr>
             <td>
                 <button data-dojo-type="dijit/form/Button"
-                        id="register_dev_btn_node">{{ register }}
+                        id="register_dev_btn_node">{{ label_tbl['register'] }}
                 </button>
             </td>
             <td>
                 <button data-dojo-type="dijit/form/Button"
-                        id="sync_dev_btn_node">{{ sync }}
+                        id="sync_dev_btn_node">{{ label_tbl['sync'] }}
                 </button>
             </td>
         </tr>
@@ -104,17 +104,17 @@
         <tr>
             <td>
                 <button data-dojo-type="dijit/form/Button"
-                        id="ok_btn_node">{{ save }}
+                        id="ok_btn_node">{{ label_tbl['save'] }}
                 </button>
             </td>
             <td>
                 <button data-dojo-type="dijit/form/Button"
-                        id="restart_btn_node">{{ restart }}
+                        id="restart_btn_node">{{ label_tbl['restart'] }}
                 </button>
             </td>
             <td>
                 <button data-dojo-type="dijit/form/Button"
-                        id="reboot_btn_node">{{ reboot }}
+                        id="reboot_btn_node">{{ label_tbl['reboot'] }}
                 </button>
             </td>
         </tr>

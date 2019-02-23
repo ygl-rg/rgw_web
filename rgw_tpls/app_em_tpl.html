@@ -100,19 +100,19 @@
                        data-dojo-props="trim:true,prpercase:true"
                        id="open_duration_input_node"
                        type="text" style="width: 5em;"/>
-                <label>{{ open_duration_label }}</label>
+                <label>{{ label_tbl['open_duration_desc'] }}</label>
                 <button data-dojo-type="dijit/form/Button"
-                        id="open_valve_btn_node">{{ open_valve_label }}
+                        id="open_valve_btn_node">{{ label_tbl['open'] }}
                 </button>
                 <button data-dojo-type="dijit/form/Button"
-                        id="close_valve_btn_node">{{ close_valve_label }}
+                        id="close_valve_btn_node">{{ label_tbl['close'] }}
                 </button>
                 <button data-dojo-type="dijit/form/Button"
-                        id="schedule_btn_node">{{ set_schedule_label }}</button>
-                <a href="_blank" id="schedule_view_url_node">{{ switch_schedule_view_label }}</a>
-                <a href="_blank" id="set_cond_action_view_url_node">{{ set_cond_action_view_label }}</a>
-                <a href="_blank" id="view_monthly_switch_usage_url_node">{{ view_monthly_switch_usage_label }}</a>
-                <a href="_blank" id="goto_em_sensor_url_node">{{ goto_label }}</a>
+                        id="schedule_btn_node">{{ label_tbl['set_schedule'] }}</button>
+                <a href="_blank" id="schedule_view_url_node">{{ label_tbl['switch_schedule_view'] }}</a>
+                <a href="_blank" id="set_cond_action_view_url_node">{{ label_tbl['set_cond_action_view'] }}</a>
+                <a href="_blank" id="view_monthly_switch_usage_url_node">{{ label_tbl['monthly_switch_usage_view'] }}</a>
+                <a href="_blank" id="goto_em_sensor_url_node">{{ label_tbl['goto'] }}</a>
             </div>
             <div id="switch_grid_node" style="height: 93%;"></div>
         </div>
@@ -147,6 +147,19 @@
                         BasicEnv.standby = new Standby({target: "main_ui_node"});
                         document.body.appendChild(BasicEnv.standby.domNode);
                         BasicEnv.standby.startup();
+                        BasicEnv.cols = [
+                            {
+                                label: " ",
+                                field: "watched",
+                                autoSave: true,
+                                unhidable: true,
+                                editor: "checkbox"
+                            },
+                            {field: "name", label: "{{ label_tbl['name'] }}"},
+                            {field: "tag", label: ""},
+                            {field: "status", label: "{{ label_tbl['status'] }}"},
+                            {field: "remaining_seconds", label: "{{ label_tbl['remaining'] }}"}
+                        ];
                         BasicEnv.switch_col_tbl = {
                             "en": [
                                 {

@@ -66,12 +66,12 @@
                 <input type="text" id="stop_time_node" />
                 <div style="display: inline-block;position: relative; top:10px; margin-left: 1em; margin-right: 1em;">
                     <input type="radio" data-dojo-type="dijit/form/RadioButton"
-                           id="radio1" name="search_type" checked value="monthly" /><label for="radio1">monthly</label><br />
+                           id="radio1" name="search_type" checked value="monthly" /><label for="radio1">{{ label_tbl['monthly'] }}</label><br />
                     <input type="radio" data-dojo-type="dijit/form/RadioButton"
-                           id="radio2" name="search_type" value="range" /><label for="radio2">range</label>
+                           id="radio2" name="search_type" value="range" /><label for="radio2">{{ label_tbl['range'] }}</label>
                 </div>
                 <button data-dojo-type="dijit/form/Button"
-                        id="query_btn_node">{{ query_btn_label }}</button>
+                        id="query_btn_node">{{ label_tbl['query'] }}</button>
         </div>
         <div id="grid_node" style="width:99%; height: 85%; margin-left: 2px;"></div>
     </div>
@@ -97,66 +97,17 @@ require(["dojo/parser", "dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-st
                     BasicEnv.store = new Memory({idProperty: "id"});
                     document.body.appendChild(BasicEnv.standby.domNode);
                     BasicEnv.standby.startup();
-                    BasicEnv.range_cols_tbl = {
-                        "en": [
-                                {field: "id", label: ""},
-                                {field: "val", label: "Switch On Duration"},
-                                {field: "start_ts", label: "Start"},
-                                {field: "stop_ts", label: "Stop"}
-                            ],
-                        "zh-cn": [
-                                {field: "id", label: ""},
-                                {field: "val", label: "开启时长"},
-                                {field: "start_ts", label: "开始"},
-                                {field: "stop_ts", label: "结束"}
-                            ],
-                        "zh-tw": [
-                                {field: "id", label: ""},
-                                {field: "val", label: "開啟時長"},
-                                {field: "start_ts", label: "開始"},
-                                {field: "stop_ts", label: "結束"}
-                            ],
-                        "vn": [
-                                {field: "id", label: ""},
-                                {field: "val", label: "Bật thời lượng"},
-                                {field: "start_ts", label: "bắt đầu"},
-                                {field: "stop_ts", label: "dừng lại"}
-                            ],
-                        "kh": [
-                                {field: "id", label: ""},
-                                {field: "val", label: "ប្ដូររយៈពេល"},
-                                {field: "start_ts", label: "ការចាប់ផ្តើម"},
-                                {field: "stop_ts", label: "បញ្ឈប់"}
-                            ]
-                    };
-
-                    BasicEnv.monthly_cols_tbl = {
-                        "en": [
-                                {field: "id", label: ""},
-                                {field: "val", label: "Switch On Duration"},
-                                {field: "start_ts", label: "Date"}
-                            ],
-                        "zh-cn": [
-                                {field: "id", label: ""},
-                                {field: "val", label: "开启时长"},
-                                {field: "start_ts", label: "日期"}
-                            ],
-                        "zh-tw": [
-                                {field: "id", label: ""},
-                                {field: "val", label: "開啟時長"},
-                                {field: "start_ts", label: "日期"}
-                            ],
-                        "vn": [
-                                {field: "id", label: ""},
-                                {field: "val", label: "Bật thời lượng"},
-                                {field: "start_ts", label: "ngày"}
-                            ],
-                        "kh": [
-                                {field: "id", label: ""},
-                                {field: "val", label: "ប្ដូររយៈពេល"},
-                                {field: "start_ts", label: "កាលបរិច្ឆេត"}
-                            ]
-                    };
+                    BasicEnv.range_cols = [
+                        {field: "id", label: ""},
+                        {field: "val", label: "{{ label_tbl['switch_on_duration'] }}"},
+                        {field: "start_ts", label: "{{ label_tbl['start'] }}"},
+                        {field: "stop_ts", label: "{{ label_tbl['stop'] }}"}
+                    ];
+                    BasicEnv.monthly_cols = [
+                        {field: "id", label: ""},
+                        {field: "val", label: "{{ label_tbl['switch_on_duration'] }}"},
+                        {field: "start_ts", label: "{{ label_tbl['date'] }}"}
+                    ];
 
                     BasicEnv.start_time_node1 = dom.byId("start_time_node1");
                     BasicEnv.start_time_node2 = dom.byId("start_time_node2");
@@ -241,7 +192,7 @@ require(["dojo/parser", "dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-st
 
                 var initGrid = function(col_type) {
                     BasicEnv.grid = new declare([Grid, CellSelection, Keyboard])({
-                        columns: (col_type=="range")?rtutils.GetLangField(BasicEnv.range_cols_tbl, BasicEnv.lang):rtutils.GetLangField(BasicEnv.monthly_cols_tbl, BasicEnv.lang),
+                        columns: (col_type=="range")?BasicEnv.range_cols:BasicEnv.monthly_cols,
                         selectionMode: "single",
                         cellNavigation: true,
                         collection: BasicEnv.store,
@@ -257,7 +208,7 @@ require(["dojo/parser", "dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-st
                     if(!BasicEnv.grid) {
                         initGrid(col_type);
                     }
-                    BasicEnv.grid.set("columns", (col_type=="range")?rtutils.GetLangField(BasicEnv.range_cols_tbl, BasicEnv.lang):rtutils.GetLangField(BasicEnv.monthly_cols_tbl, BasicEnv.lang));
+                    BasicEnv.grid.set("columns", (col_type=="range")?BasicEnv.range_cols:BasicEnv.monthly_cols;
                     BasicEnv.store.setData(dataset);
                     BasicEnv.grid.refresh();
                 };

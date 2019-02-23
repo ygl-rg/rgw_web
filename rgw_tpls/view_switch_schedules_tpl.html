@@ -53,9 +53,9 @@
 <div id="main_window" class="rgy_kh_font" data-dojo-type="dijit/layout/BorderContainer" data-dojo-props="design:'headline',gutters:false">
     <div data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'top'">
         <div>
-            <button data-dojo-type="dijit/form/Button" id="valid_btn_node">{{ valid_label }}</button>
-            <button data-dojo-type="dijit/form/Button" id="invalid_btn_node">{{ invalid_label }}</button>
-            <button data-dojo-type="dijit/form/Button" id="remove_btn_node">{{ remove_label }}</button>
+            <button data-dojo-type="dijit/form/Button" id="valid_btn_node">{{ label_tbl['valid'] }}</button>
+            <button data-dojo-type="dijit/form/Button" id="invalid_btn_node">{{ label_tbl['invalid'] }}</button>
+            <button data-dojo-type="dijit/form/Button" id="remove_btn_node">{{ label_tbl['remove'] }}</button>
         </div>
     </div>
     <div
@@ -86,45 +86,18 @@ require(["dojo/parser", "dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-st
                     BasicEnv.store = new Memory({idProperty: "id"});
                     document.body.appendChild(BasicEnv.standby.domNode);
                     BasicEnv.standby.startup();
-                    BasicEnv.column_tbl = {
-                            "en": [
-                                {field: "watched", autoSave: true, unhidable: true,
-                                    label: " ",
-                                    editor: "checkbox"},
-                                {field: "local_start_time", label: "Start Date"},
-                                {field: "local_stop_time", label: "Stop Date"},
-                                {field: "hh_mm", label: "Time"},
-                                {field: "working_seconds", label: "Working Duration"},
-                                {field: "switch_names", label: "Switches"},
-                                {field: "local_next_run_time", label: "Next Schedule Time"},
-                                {field: "timezone", label: "Timezone", hidden: true}
-                            ],
-                            "zh-cn": [
-                                {field: "watched", autoSave: true, unhidable: true,
-                                    label: " ",
-                                    editor: "checkbox"},
-                                {field: "local_start_time", label: "开始"},
-                                {field: "local_stop_time", label: "结束"},
-                                {field: "hh_mm", label: "时间"},
-                                {field: "working_seconds", label: "工作时长"},
-                                {field: "switch_names", label: "开关"},
-                                {field: "local_next_run_time", label: "下次排程"},
-                                {field: "timezone", label: "时区", hidden: true}
-                            ],
-                            "zh-tw": [
-                                {field: "watched", autoSave: true, unhidable: true,
-                                    label: " ",
-                                    editor: "checkbox"},
-                                {field: "local_start_time", label: "開始"},
-                                {field: "local_stop_time", label: "結束"},
-                                {field: "hh_mm", label: "時間"},
-                                {field: "working_seconds", label: "工作時長"},
-                                {field: "switch_names", label: "開關"},
-                                {field: "local_next_run_time", label: "下次排程"},
-                                {field: "timezone", label: "時區", hidden: true}
-                            ]
-
-                        };
+                    BasicEnv.cols = [
+                        {field: "watched", autoSave: true, unhidable: true,
+                            label: " ",
+                            editor: "checkbox"},
+                        {field: "local_start_time", label: "{{ label_tbl['start_date'] }}"},
+                        {field: "local_stop_time", label: "{{ label_tbl['stop_date'] }}"},
+                        {field: "hh_mm", label: "{{ label_tbl['time'] }}"},
+                        {field: "working_seconds", label: "{{ label_tbl['working_duration'] }}"},
+                        {field: "switch_names", label: "{{ label_tbl['switches'] }}"},
+                        {field: "local_next_run_time", label: "{{ label_tbl['next_schedule_time'] }}"},
+                        {field: "timezone", label: "{{ label_tbl['timezone'] }}", hidden: true}
+                    ];
 
                     BasicEnv.refresh_confirm_dialog = new ConfirmDialog({
                                                          onExecute: function() {
@@ -140,7 +113,7 @@ require(["dojo/parser", "dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-st
                 var initGrid = function() {
                     BasicEnv.grid = new declare([Grid, Selection, Keyboard, ColumnHider, Editor])(
                         {
-                            columns: rtutils.GetLangField(BasicEnv.column_tbl, BasicEnv.lang),
+                            columns: BasicEnv.cols,
                             selectionMode: "none",
                             cellNavigation: true,
                             collection: BasicEnv.store,

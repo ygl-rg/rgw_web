@@ -34,7 +34,6 @@
             imgpath: location.pathname.match(/^\//) + "imgs",
             standby: undefined,
             main_grid: undefined,
-            watched_groupid: -1,
             poll_timer: undefined
         };
         BasicEnv.sessionid = "{{ sessionid }}";
@@ -94,16 +93,16 @@
         <div style="width: 100%;"
              data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'center'">
             <div style="width: 100%; margin-bottom: 5px;">
-                <a href="_blank" id="sensor_avg_trend_url_node">{{ history_trend_url_label }}</a>
+                <a href="_blank" id="sensor_avg_trend_url_node">{{ label_tbl['history_trend_url'] }}</a>
                 <span style="display: inline-block; width: 4px; height: 1px;"></span>
-                <a href="_blank" id="sensor_avg_data_url_node">{{ history_data_url_label }}</a>
+                <a href="_blank" id="sensor_avg_data_url_node">{{ label_tbl['history_data_url'] }}</a>
                 <button data-dojo-type="dijit/form/Button"
-                        id="plot1_btn_node">{{ plot1_label }}
+                        id="plot1_btn_node">{{ label_tbl['plot1'] }}
                 </button>
                 <button data-dojo-type="dijit/form/Button"
-                        id="plot2_btn_node">{{ plot2_label }}
+                        id="plot2_btn_node">{{ label_tbl['plot2'] }}
                 </button>
-                <a href="_blank" id="goto_em_url_node">{{ goto_label }}</a>
+                <a href="_blank" id="goto_em_url_node">{{ label_tbl['goto'] }}</a>
                 <label id="hint_node"></label>
             </div>
             <div id="sensor_grid_node" style="height: 90%;"></div>
@@ -140,48 +139,19 @@
                         BasicEnv.standby = new Standby({target: "main_ui_node"});
                         document.body.appendChild(BasicEnv.standby.domNode);
                         BasicEnv.standby.startup();
-                        BasicEnv.sensor_col_tbl = {
-                            "en": [
-                                {
-                                    label: " ",
-                                    field: "sensor_grid_watched",
-                                    autoSave: true,
-                                    unhidable: true,
-                                    editor: "checkbox"
-                                },
-                                {field: "sensor_name", label: "Name"},
-                                {field: "tag", label: ""},
-                                {field: "sensor_val", label: "Status"},
-                                {field: "sensor_uts", label: "Time"}
-                            ],
-                            "zh-cn": [
-                                {
-                                    label: " ",
-                                    field: "sensor_grid_watched",
-                                    autoSave: true,
-                                    unhidable: true,
-                                    editor: "checkbox"
-                                },
-                                {field: "sensor_name", label: "名字"},
-                                {field: "tag", label: ""},
-                                {field: "sensor_val", label: "状态"},
-                                {field: "sensor_uts", label: "时间"}
-                            ],
-
-                            "zh-tw": [
-                                {
-                                    label: " ",
-                                    field: "sensor_grid_watched",
-                                    autoSave: true,
-                                    unhidable: true,
-                                    editor: "checkbox"
-                                },
-                                {field: "sensor_name", label: "名字"},
-                                {field: "tag", label: ""},
-                                {field: "sensor_val", label: "狀態"},
-                                {field: "sensor_uts", label: "時間"}
-                            ]
-                        };
+                        BasicEnv.cols = [
+                            {
+                                label: " ",
+                                field: "sensor_grid_watched",
+                                autoSave: true,
+                                unhidable: true,
+                                editor: "checkbox"
+                            },
+                            {field: "sensor_name", label: "{{ label_tbl['name'] }}"},
+                            {field: "tag", label: ""},
+                            {field: "sensor_val", label: "{{ label_tbl['status'] }}"},
+                            {field: "sensor_uts", label: "{{ label_tbl['time'] }}"}
+                        ];
                         BasicEnv.sensor_store = new Memory({idProperty: "id"});
                         BasicEnv.hint_node = dom.byId("hint_node");
                         BasicEnv.dialog = new Dialog();
@@ -338,7 +308,7 @@
 
                     var InitSensorGrid = function() {
                         BasicEnv.sensor_grid = new declare([Grid, Selection, Keyboard, Editor, ColumnHider])({
-                            columns: rtutils.GetLangField(BasicEnv.sensor_col_tbl, BasicEnv.lang),
+                            columns: BasicEnv.cols,
                             selectionMode: "single",
                             cellNavigation: true,
                             collection: BasicEnv.sensor_store,
