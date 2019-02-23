@@ -198,7 +198,7 @@ require(["dojo/parser", "dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-st
                 var LoadData = function(search_no) {
                     BasicEnv.standby.show();
                     var para = {"search_no": search_no, "token": BasicEnv.sessionid};
-                    var deferobj = rtutils.Rpc2Deferred(em_rpc.GetUserSchedules(para));
+                    var deferobj = rtutils.Rpc2Deferred(em_rpc.ListSchedule(para));
                     return deferobj.then(function(result) {
                                 BasicEnv.standby.hide();
                                 var dataset = darray.map(result, function(item) {

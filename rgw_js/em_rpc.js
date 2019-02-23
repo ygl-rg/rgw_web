@@ -35,9 +35,9 @@ define(["dojo/request/xhr", "dojo/json"], function(xhr, json) {
                 handleAs: "json", method: 'POST'});
         },
 
-        GetUserSchedules: function (arg) {
+        ListSchedule: function (arg) {
             var paras = [arg];
-            return xhr(this.URL, {data: json.stringify({params: paras, method: "GetUserSchedules", id: 1}),
+            return xhr(this.URL, {data: json.stringify({params: paras, method: "ListSchedule", id: 1}),
                 handleAs: "json", method: 'POST'});
         },
 
