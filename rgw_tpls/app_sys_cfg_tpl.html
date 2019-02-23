@@ -96,16 +96,6 @@
             </td>
         </tr>
         <tr>
-            <td>polling interval:</td>
-            <td>
-                <input data-dojo-type="dijit/form/ValidationTextBox"
-                       data-dojo-props="trim:true, prpercase:true"
-                       id="polling_interval_input_node"
-                       type="text" required="true"
-                       style="width: 10em;"/>
-            </td>
-        </tr>
-        <tr>
             <td>rx gateway url:</td>
             <td>
                 <input data-dojo-type="dijit/form/ValidationTextBox"
@@ -113,16 +103,6 @@
                        id="gw_url_input_node"
                        type="text" required="true"
                        style="width: 20em;"/>
-            </td>
-        </tr>
-        <tr>
-            <td>rx gateway pwd:</td>
-            <td>
-                <input data-dojo-type="dijit/form/ValidationTextBox"
-                       data-dojo-props="trim:true, prpercase:true"
-                       id="gw_pwd_input_node"
-                       type="text" required="true"
-                       style="width: 10em;"/>
             </td>
         </tr>
         <tr>
@@ -192,11 +172,6 @@
                 </button>
             </td>
         </tr>
-        <tr>
-            <td>
-                <label id="hint_node"></label>
-            </td>
-        </tr>
     </table>
 </div>
 <div id="standby"></div>
@@ -243,7 +218,7 @@
 
 
                     var SetHint = function (hint) {
-                        dom.byId("hint_node").innerHTML = hint;
+                        alert(hint);
                     };
 
                     var SetUI = function (mdl) {
@@ -252,10 +227,8 @@
                             registry.byId("pagekite_frontend_input_node").set("value", mdl.pagekite_frontend || "");
                             registry.byId("domain_input_node").set("value", mdl.domain || "");
                             registry.byId("pagekite_pwd_input_node").set("value", mdl.pagekite_pwd || "");
-                            registry.byId("polling_interval_input_node").set("value", mdl.polling_interval || "12");
                             registry.byId("pwd_input_node").set("value", mdl.pwd || "");
                             registry.byId("gw_url_input_node").set("value", mdl.gw_url || "");
-                            registry.byId("gw_pwd_input_node").set("value", mdl.gw_pwd || "");
                             registry.byId("email_sender_input_node").set("value", mdl.email_sender || "");
                             registry.byId("elasticemail_api_key_input_node").set("value", mdl.elasticemail_api_key || "");
                             registry.byId("elasticemail_send_url_input_node").set("value", mdl.elasticemail_send_url || "");
@@ -268,10 +241,8 @@
                         data.pagekite_frontend = registry.byId("pagekite_frontend_input_node").get("value");
                         data.domain = registry.byId("domain_input_node").get("value");
                         data.pagekite_pwd = registry.byId("pagekite_pwd_input_node").get("value");
-                        data.polling_interval = registry.byId("polling_interval_input_node").get("value");
                         data.pwd = registry.byId("pwd_input_node").get("value");
                         data.gw_url = registry.byId("gw_url_input_node").get("value");
-                        data.gw_pwd = registry.byId("gw_pwd_input_node").get("value");
                         var temp = registry.byId("email_sender_input_node").get("value");
                         var emails = dx_validate.getEmailAddressList(temp);
                         data.email_sender = (emails.length>0)?emails[0]:"";
