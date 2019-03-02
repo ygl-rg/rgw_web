@@ -208,7 +208,7 @@ require(["dojo/parser", "dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-st
                     if(!BasicEnv.grid) {
                         initGrid(col_type);
                     }
-                    BasicEnv.grid.set("columns", (col_type=="range")?BasicEnv.range_cols:BasicEnv.monthly_cols;
+                    BasicEnv.grid.set("columns", (col_type=="range")?BasicEnv.range_cols:BasicEnv.monthly_cols);
                     BasicEnv.store.setData(dataset);
                     BasicEnv.grid.refresh();
                 };
