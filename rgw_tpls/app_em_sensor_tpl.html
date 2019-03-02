@@ -158,12 +158,6 @@
                         BasicEnv.dialog.startup();
                     };
 
-                    var TranslateUI = function() {
-                        //dom.byId("sensor_avg_trend_url_node").innerHTML = rtutils.GetLangField(multi_lang.labels["view_trend"], BasicEnv.lang);
-                        //dom.byId("sensor_avg_data_url_node").innerHTML = rtutils.GetLangField(multi_lang.labels["view_log"], BasicEnv.lang);
-                    };
-
-
                     var Sensor2GridItem = function(sensor_tbl) {
                         return {
                             "id": sensor_tbl.id,
@@ -351,7 +345,6 @@
                     };
 
                     InitEnv();
-                    TranslateUI();
                     AfterLogin();
 
                     on(dom.byId("sensor_avg_trend_url_node"), "click", lang.hitch(this, function(evt) {
