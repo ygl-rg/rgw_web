@@ -100,7 +100,8 @@
                                data-dojo-props="trim:true,prpercase:true"
                                type="text"
                                id="working_seconds_input_node"
-                               style="width: 5em;"/></td>
+                               style="width: 5em;"/>
+                        <label>{{ label_tbl['second'] }}</label>
                     </td>
                 </tr>
                 <tr>
@@ -386,7 +387,7 @@ require(["dojo/parser", "dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-st
                     }
                 };
 
-                var RemoveActionItemFromGrid = function() {
+                var RemoveTriggerItemFromGrid = function() {
                     var ids = BasicEnv.sensor_store.filter({"sensor_grid_watched": true}).select("sensorid").fetchSync();
                     if(ids.length > 0) {
                         for(var i = 0; i!=ids.length; ++i) {
@@ -403,7 +404,6 @@ require(["dojo/parser", "dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-st
                 };
 
                 var UpdateSwitchInput = function(switch_mdl) {
-                    console.log(switch_mdl);
                     registry.byId("switch_select_node").set("value", switch_mdl.switchid);
                     registry.byId("action_select_node").set("value", switch_mdl.action_no);
                     if(switch_mdl.action_no == "ON") {
@@ -430,7 +430,7 @@ require(["dojo/parser", "dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-st
                 });
 
                 on(registry.byId("remove_sensor_btn_node"), "click", function(evt) {
-                    RemoveActionItemFromGrid();
+                    RemoveTriggerItemFromGrid();
                 });
 
                 on(registry.byId("ok_btn_node"), "click", function(evt) {
