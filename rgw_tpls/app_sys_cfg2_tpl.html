@@ -76,6 +76,16 @@
             </td>
         </tr>
         <tr>
+            <td>{{ label_tbl['email_recipient'] }}:</td>
+            <td>
+                <input data-dojo-type="dijit/form/ValidationTextBox"
+                       data-dojo-props="trim:true, prpercase:true"
+                       id="email_recipient_input_node"
+                       type="text"
+                       style="width: 20em;"/>
+            </td>
+        </tr>
+        <tr>
             <td>{{ label_tbl['email_sender'] }}:</td>
             <td>
                 <input data-dojo-type="dijit/form/ValidationTextBox"
@@ -170,6 +180,7 @@
                         if(mdl) {
                             registry.byId("tz_select_node").set("value", mdl.timezone || "UTC");
                             registry.byId("pwd_input_node").set("value", mdl.pwd || "");
+                            registry.byId("email_recipient_input_node").set("value", mdl.email_recipient || "");
                             registry.byId("email_sender_input_node").set("value", mdl.email_sender || "");
                         }
                     };
@@ -178,8 +189,11 @@
                         var data = {};
                         data.timezone = registry.byId("tz_select_node").get("value");
                         data.pwd = registry.byId("pwd_input_node").get("value");
-                        var temp = registry.byId("email_sender_input_node").get("value");
+                        var temp = registry.byId("email_recipient_input_node").get("value");
                         var emails = dx_validate.getEmailAddressList(temp);
+                        data.email_recipient = (emails.length>0)?emails[0]:"";
+                        temp = registry.byId("email_sender_input_node").get("value");
+                        emails = dx_validate.getEmailAddressList(temp);
                         data.email_sender = (emails.length>0)?emails[0]:"";
                         return data;
                     };

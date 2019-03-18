@@ -135,16 +135,7 @@
                             <option value="{{ tbl['value'] }}" selected="{{ selected_str }}">{{ tbl['label'] }}</option>
                             {% end %}
                         </select>
-                    </td>
-                </tr>
-                <tr>
-                    <td><label>email:</label></td>
-                    <td>
-                        <input data-dojo-type="dijit/form/TextBox"
-                               data-dojo-props="trim:true,prpercase:true"
-                               type="text"
-                               style="width:20em;"
-                               id="emails_input_node" />
+                        <label>{{ label_tbl['minute'] }}</label>
                     </td>
                 </tr>
                 <tr>
@@ -160,25 +151,26 @@
                 <tr>
                     <td colspan="4">
                         <button data-dojo-type="dijit/form/Button"
-                                id="add_sensor_btn_node">{{ label_tbl['update_btn'] }}</button>
-
-                        <button data-dojo-type="dijit/form/Button"
-                                id="remove_sensor_btn_node">{{ label_tbl['remove_btn'] }}</button>
-                        <button data-dojo-type="dijit/form/Button"
-                                id="ok_btn_node">{{ label_tbl['save_btn'] }}</button>
+                                id="add_sensor_btn_node">{{ label_tbl['add_btn'] }}</button>
                     </td>
                 </tr>
             </table>
         </div>
         <div data-dojo-type="dijit/layout/BorderContainer"
              data-dojo-props="region: 'bottom',doLayout: true"
-             style="height: 57%;">
-            <div style="width: 100%;"
-            data-dojo-type="dijit/layout/ContentPane"
-            data-dojo-props="region: 'center'">
+             style="height: 50%;">
+            <div data-dojo-type="dijit/layout/ContentPane"
+                 data-dojo-props="region: 'center'">
                 <div style="position: relative; width:100%; height: 95%;"
                      id="sensor_grid_node">
                 </div>
+            </div>
+            <div data-dojo-type="dijit/layout/ContentPane"
+                 data-dojo-props="region: 'bottom'">
+                <button data-dojo-type="dijit/form/Button"
+                        id="remove_sensor_btn_node">{{ label_tbl['remove_btn'] }}</button>
+                <button data-dojo-type="dijit/form/Button"
+                        id="ok_btn_node">{{ label_tbl['save_btn'] }}</button>
             </div>
         </div>
     </div>
@@ -287,8 +279,6 @@ require(["dojo/parser", "dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-st
                     else {
                         data.stop_ts = 0;
                     }
-                    temp = registry.byId("emails_input_node").get('value');
-                    data.emails = dx_validate.getEmailAddressList(temp);
                     data.message = registry.byId("msg_input_node").get("value");
                     return data;
                 };
@@ -349,7 +339,6 @@ require(["dojo/parser", "dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-st
                     for(var i = 0; i!=mdl.sensors.length; ++i) {
                         mdl.sensors[i]["sensor_grid_watched"] = false;
                     }
-                    registry.byId("emails_input_node").set('value', mdl.emails.join(","));
                     registry.byId("msg_input_node").set("value", mdl.message);
                     if(mdl.switches.length > 0) {
                         UpdateSwitchInput(mdl.switches[0]);

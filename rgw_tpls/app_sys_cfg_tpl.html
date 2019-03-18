@@ -116,6 +116,16 @@
             </td>
         </tr>
         <tr>
+            <td>email recipient:</td>
+            <td>
+                <input data-dojo-type="dijit/form/ValidationTextBox"
+                       data-dojo-props="trim:true, prpercase:true"
+                       id="email_recipient_input_node"
+                       type="text"
+                       style="width: 20em;"/>
+            </td>
+        </tr>
+        <tr>
             <td>email sender:</td>
             <td>
                 <input data-dojo-type="dijit/form/ValidationTextBox"
@@ -229,6 +239,7 @@
                             registry.byId("pagekite_pwd_input_node").set("value", mdl.pagekite_pwd || "");
                             registry.byId("pwd_input_node").set("value", mdl.pwd || "");
                             registry.byId("gw_url_input_node").set("value", mdl.gw_url || "");
+                            registry.byId("email_recipient_input_node").set("value", mdl.email_recipient || "");
                             registry.byId("email_sender_input_node").set("value", mdl.email_sender || "");
                             registry.byId("elasticemail_api_key_input_node").set("value", mdl.elasticemail_api_key || "");
                             registry.byId("elasticemail_send_url_input_node").set("value", mdl.elasticemail_send_url || "");
@@ -243,8 +254,11 @@
                         data.pagekite_pwd = registry.byId("pagekite_pwd_input_node").get("value");
                         data.pwd = registry.byId("pwd_input_node").get("value");
                         data.gw_url = registry.byId("gw_url_input_node").get("value");
-                        var temp = registry.byId("email_sender_input_node").get("value");
+                        var temp = registry.byId("email_recipient_input_node").get("value");
                         var emails = dx_validate.getEmailAddressList(temp);
+                        data.email_recipient = (emails.length>0)?emails[0]:"";
+                        temp = registry.byId("email_sender_input_node").get("value");
+                        emails = dx_validate.getEmailAddressList(temp);
                         data.email_sender = (emails.length>0)?emails[0]:"";
                         data.elasticemail_api_key = registry.byId("elasticemail_api_key_input_node").get("value");
                         data.elasticemail_send_url = registry.byId("elasticemail_send_url_input_node").get("value");
