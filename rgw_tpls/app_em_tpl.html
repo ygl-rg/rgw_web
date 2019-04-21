@@ -155,6 +155,7 @@
                                 unhidable: true,
                                 editor: "checkbox"
                             },
+                            {field: "icon", label: ""},
                             {field: "name", label: "{{ label_tbl['name'] }}"},
                             {field: "tag", label: ""},
                             {field: "status", label: "{{ label_tbl['status'] }}"},
@@ -220,9 +221,18 @@
                         }
                     };
 
+                    var SetSwitchGridIconCell = function(switch_mdl, cell_node) {
+                        var content = dstring.substitute('<img src="/imgs/${iconid}.png" style="vertical-align:middle"></img>',
+                                {'iconid': switch_mdl.iconid});
+                        if(cell_node.innerHTML !== content) {
+                            cell_node.innerHTML = content;
+                        }
+                    };
+
                     var SetSwitchGridNameCell = function(switch_mdl, cell_node) {
-                        var content = dstring.substitute('<img src="/imgs/${iconid}.png" style="vertical-align:middle"></img>&nbsp;${name}',
-                                {'iconid': switch_mdl.iconid, 'name': switch_mdl.name});
+                        //var content = dstring.substitute('<img src="/imgs/${iconid}.png" style="vertical-align:middle"></img>&nbsp;${name}',
+                        //        {'iconid': switch_mdl.iconid, 'name': switch_mdl.name});
+                        var content = switch_mdl.name;
                         if(cell_node.innerHTML !== content) {
                             cell_node.innerHTML = content;
                         }
@@ -233,6 +243,15 @@
                             for (var i = 0; i !== mdls.length; ++i) {
                                 var namecell = BasicEnv.switch_grid.cell(mdls[i].id, "1");
                                 if (namecell.element) {
+                                    SetSwitchGridIconCell(mdls[i], namecell.element);
+                                }
+                            }
+                        })(switch_items);
+
+                        (function (mdls) {
+                            for (var i = 0; i !== mdls.length; ++i) {
+                                var namecell = BasicEnv.switch_grid.cell(mdls[i].id, "2");
+                                if (namecell.element) {
                                     SetSwitchGridNameCell(mdls[i], namecell.element);
                                 }
                             }
@@ -240,7 +259,7 @@
 
                         (function(mdls) {
                             for (var i = 0; i !== mdls.length; ++i) {
-                                var namecell = BasicEnv.switch_grid.cell(mdls[i].id, "2");
+                                var namecell = BasicEnv.switch_grid.cell(mdls[i].id, "3");
                                 if (namecell.element) {
                                     namecell.element.innerHTML = mdls[i].tag;
                                 }
@@ -249,7 +268,7 @@
 
                         (function (mdls) {
                             for (var i = 0; i !== mdls.length; ++i) {
-                                var status_cell = BasicEnv.switch_grid.cell(mdls[i].id, "3");
+                                var status_cell = BasicEnv.switch_grid.cell(mdls[i].id, "4");
                                 if (status_cell.element) {
                                     SetSwitchGridStatusCell(mdls[i], status_cell.element);
                                 }
@@ -258,7 +277,7 @@
                         })(switch_items);
                         (function (mdls) {
                             for (var i = 0; i !== mdls.length; ++i) {
-                                var secs_cell = BasicEnv.switch_grid.cell(mdls[i].id, "4");
+                                var secs_cell = BasicEnv.switch_grid.cell(mdls[i].id, "5");
                                 if (secs_cell.element) {
                                     SetSwitchGridRemainingSeconds(mdls[i], secs_cell.element);
                                 }
