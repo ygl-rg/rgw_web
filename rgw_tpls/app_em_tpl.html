@@ -222,7 +222,7 @@
                     };
 
                     var SetSwitchGridIconCell = function(switch_mdl, cell_node) {
-                        var content = dstring.substitute('<img src="/imgs/${iconid}.png" style="vertical-align:middle"></img>',
+                        var content = dstring.substitute('<img src="/imgs/${iconid}.png" style="display: block; margin: 0 auto;"></img>',
                                 {'iconid': switch_mdl.iconid});
                         if(cell_node.innerHTML !== content) {
                             cell_node.innerHTML = content;
