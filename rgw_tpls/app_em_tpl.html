@@ -67,7 +67,8 @@
         }
 
         .field-icon {
-            width: 40px;
+            text-align: center;
+            width: 48px;
         }
 
         .field-name {
@@ -193,7 +194,7 @@
                     var SetSwitchGridStatusCell = function (switch_mdl, cell_node) {
                         var content = "N/A";
                         if(switch_mdl.status == "ON") {
-                            content = dstring.substitute('<img src="/imgs/${status}.png" style="vertical-align:middle"></img>',
+                            content = dstring.substitute('<img src="/imgs/${status}.png"></img>',
                                 {'status': "on_status"});
                         }
                         else if(switch_mdl.status == "OFF") {
