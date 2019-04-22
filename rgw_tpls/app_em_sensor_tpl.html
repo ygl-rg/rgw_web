@@ -64,6 +64,10 @@
             width: 2em;
         }
 
+        .field-iconid {
+            width: 48px;
+        }
+
         .field-tag {
             text-align: center;
         }
@@ -147,6 +151,7 @@
                                 unhidable: true,
                                 editor: "checkbox"
                             },
+                            {field: "iconid", label: ""},
                             {field: "sensor_name", label: "{{ label_tbl['name'] }}"},
                             {field: "tag", label: ""},
                             {field: "sensor_val", label: "{{ label_tbl['status'] }}"},
@@ -177,6 +182,15 @@
                             for (var i = 0; i !== mdls.length; ++i) {
                                 var namecell = BasicEnv.sensor_grid.cell(mdls[i].id, "1");
                                 if (namecell.element) {
+                                    SetIconCell(mdls[i], namecell.element);
+                                }
+                            }
+                        })(switch_items);
+
+                        (function (mdls) {
+                            for (var i = 0; i !== mdls.length; ++i) {
+                                var namecell = BasicEnv.sensor_grid.cell(mdls[i].id, "2");
+                                if (namecell.element) {
                                     SetNameCell(mdls[i], namecell.element);
                                 }
                             }
@@ -184,7 +198,7 @@
 
                         (function(mdls) {
                             for (var i = 0; i !== mdls.length; ++i) {
-                                var namecell = BasicEnv.sensor_grid.cell(mdls[i].id, "2");
+                                var namecell = BasicEnv.sensor_grid.cell(mdls[i].id, "3");
                                 if (namecell.element) {
                                     namecell.element.innerHTML = mdls[i].tag;
                                 }
@@ -193,7 +207,7 @@
 
                         (function (mdls) {
                             for (var i = 0; i !== mdls.length; ++i) {
-                                var val_cell = BasicEnv.sensor_grid.cell(mdls[i].id, "3");
+                                var val_cell = BasicEnv.sensor_grid.cell(mdls[i].id, "4");
                                 if (val_cell.element) {
                                     SetSensorValCell(mdls[i], val_cell.element);
                                 }
@@ -202,7 +216,7 @@
                         })(switch_items);
                         (function (mdls) {
                             for (var i = 0; i !== mdls.length; ++i) {
-                                var uts_cell = BasicEnv.sensor_grid.cell(mdls[i].id, "4");
+                                var uts_cell = BasicEnv.sensor_grid.cell(mdls[i].id, "5");
                                 if (uts_cell.element) {
                                     SetUtsCell(mdls[i], uts_cell.element);
                                 }
@@ -251,6 +265,9 @@
                     };
 
                     var RenderSensorGridRow = function (row, args) {
+                        query(".field-iconid", row).forEach(function (node) {
+                            SetIconCell(args[0], node);
+                        });
                         query(".field-sensor_name", row).forEach(function (node) {
                             SetNameCell(args[0], node);
                         });
@@ -266,9 +283,13 @@
                         return row;
                     };
 
+                    var SetIconCell = function (grid_item, cell_node) {
+                        cell_node.innerHTML = dstring.substitute('<img src="/imgs/${iconid}.png"></img>',
+                                {'iconid': grid_item.iconid});
+                    };
+
                     var SetNameCell = function (grid_item, cell_node) {
-                        cell_node.innerHTML = dstring.substitute('<img src="/imgs/${iconid}.png" style="vertical-align:middle"></img>&nbsp;${name}',
-                                    {'iconid': grid_item.iconid, 'name': grid_item.sensor_name});
+                        cell_node.innerHTML = grid_item.sensor_name;
                     };
 
                     var SetSensorValCell = function(grid_item, cell_node) {
@@ -315,7 +336,7 @@
                     };
 
                     var InitMgrs = function () {
-                        BasicEnv.poll_timer = new dxtiming.Timer(30*1000);
+                        BasicEnv.poll_timer = new dxtiming.Timer(32*1000);
                         BasicEnv.poll_timer.onTick = function () {
                             SyncSensor();
                         };
