@@ -160,7 +160,7 @@
                                 unhidable: true,
                                 editor: "checkbox"
                             },
-                            {field: "icon", label: ""},
+                            {field: "iconid", label: ""},
                             {field: "name", label: "{{ label_tbl['name'] }}"},
                             {field: "tag", label: ""},
                             {field: "status", label: "{{ label_tbl['status'] }}"},
@@ -329,6 +329,10 @@
                     };
 
                     var RenderValveGridRow = function (row, args) {
+                        query(".field-iconid", row).forEach(function(node) {
+                           SetSwitchGridIconCell(args[0], node);
+                        });
+
                         query(".field-name", row).forEach(function(node) {
                             SetSwitchGridNameCell(args[0], node);
                         });
