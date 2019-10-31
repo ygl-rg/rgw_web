@@ -766,7 +766,7 @@
                             BasicEnv.hint_node.innerHTML = "";
                             var para = {"switchids": switchids, "working_seconds": -1};
                             var working_secs = registry.byId("open_duration_input_node").get("value");
-                            if(!dojox.validate.isInRange(working_secs, {min: 15, max: 9999})) {
+                            if(!dojox.validate.isInRange(working_secs, {min: 10, max: 9999})) {
                                 BasicEnv.hint_node.innerHTML = rtutils.GetLangField(multi_lang.errs.number_format, BasicEnv.lang);
                                 return false;
                             }
