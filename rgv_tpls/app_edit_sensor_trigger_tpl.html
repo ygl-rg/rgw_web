@@ -255,9 +255,19 @@ require(["dojo/parser", "dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-st
                             {field: "working_seconds", label: "时长"}
                         ]
                     };
-                    BasicEnv.sensor_store = new Memory({idProperty: "sensorid"});
+                    BasicEnv.sensor_store = new Memory({idProperty: "id"});
                     BasicEnv.switch_store = new Memory({idProperty: "switchid"});
                     BasicEnv.standby_obj.startup();
+                };
+
+                var GenPseudoSensorStoreId  = function() {
+                    while(1) {
+                        var next_id = Math.floor(Math.random()*1000000);
+                        if(BasicEnv.sensor_store.getSync(next_id)) {}
+                        else {
+                            return next_id;
+                        }
+                    }
                 };
 
                 var AfterInit = function() {
@@ -457,7 +467,8 @@ require(["dojo/parser", "dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-st
                 var AddTriggerItemToGrid = function() {
                     try {
                         var sensorid = registry.byId("sensor_select_node").get("value");
-                        var row1 = {"sensorid": sensorid,
+                        var row1 = {"id": GenPseudoSensorStoreId(),
+                                    "sensorid": sensorid,
                                     "op": registry.byId("op_select_node").get("value"),
                                     "rval": registry.byId("rval_input_node").get("value"),
                                     "sensor_grid_watched": false,
@@ -486,7 +497,7 @@ require(["dojo/parser", "dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-st
                 };
 
                 var RemoveTriggerItemFromGrid = function() {
-                    var ids = BasicEnv.sensor_store.filter({"sensor_grid_watched": true}).select("sensorid").fetchSync();
+                    var ids = BasicEnv.sensor_store.filter({"sensor_grid_watched": true}).select("id").fetchSync();
                     if(ids.length > 0) {
                         for(var i = 0; i!=ids.length; ++i) {
                             BasicEnv.sensor_store.removeSync(ids[i]);
