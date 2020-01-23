@@ -274,7 +274,7 @@ require(["dojo/parser", "dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-st
                     InitSensorGrid();
                     InitSwitchGrid();
                     if(BasicEnv.triggerid > 0) {
-                        GetTrigger();
+                        GetTrigger(BasicEnv.triggerid);
                     }
                 };
 
@@ -386,8 +386,7 @@ require(["dojo/parser", "dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-st
                     deferobj.then(
                             function(result) {
                                 rtutils.HideStandby(BasicEnv.standby_obj, "main_window");
-                                BasicEnv.triggerid = result;
-                                return GetTrigger();
+                                return GetTrigger(result);
                             },
                             function(err) {
                                 rtutils.ReloadWhenExpired(err);
@@ -405,10 +404,10 @@ require(["dojo/parser", "dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-st
                         );
                 };
 
-                var GetTrigger = function() {
+                var GetTrigger = function(trigger_id) {
                     rtutils.ShowStandby(BasicEnv.standby_obj, "main_window");
                     var deferobj = rtutils.Rpc2Deferred(action_rpc.GetTrigger({"token": BasicEnv.sessionid,
-                                                                               "triggerid": BasicEnv.triggerid}));
+                                                                               "triggerid": trigger_id}));
                     deferobj.then(
                             function(result) {
                                 rtutils.HideStandby(BasicEnv.standby_obj, "main_window");
