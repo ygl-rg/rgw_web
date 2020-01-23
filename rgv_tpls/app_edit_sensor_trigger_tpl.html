@@ -386,7 +386,8 @@ require(["dojo/parser", "dojo/on","dojo/dom", "dojo/dom-construct", "dojo/dom-st
                     deferobj.then(
                             function(result) {
                                 rtutils.HideStandby(BasicEnv.standby_obj, "main_window");
-                                SetHint("ok");
+                                BasicEnv.triggerid = result;
+                                return GetTrigger();
                             },
                             function(err) {
                                 rtutils.ReloadWhenExpired(err);
