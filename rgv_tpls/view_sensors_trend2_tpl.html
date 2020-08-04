@@ -160,6 +160,9 @@
                                             sensor_mdl: result.sensor_tbl[BasicEnv.sensorids[i]],
                                             sensor_data_rows: result.log_tbl[BasicEnv.sensorids[i]]
                                         });
+                                        var opt = MakeEChartOption(result.sensor_tbl[BasicEnv.sensorids[i]],
+                                                                   result.log_tbl[BasicEnv.sensorids[i]]);
+                                        BasicEnv.echart.setOption(opt);
                                         /*
                                         trend_block.startup();
                                         container_obj.addChild(trend_block);
@@ -178,6 +181,44 @@
                                         console.log(err);
                                     }
                             );
+                    };
+
+                    var MakeEChartOption = function(sensor_mdl, sensor_data_rows) {
+                        var GetXLabelTextFunc = function (dt_obj1) {
+                            return rtutils.DT2Str3(dt_obj1);
+                        };
+                        var x_labels = darray.map(this.sensor_data_rows, function (item, i) {
+                            var dt_obj = rtutils.ts2date(item.cts);
+                            return GetXLabelTextFunc(dt_obj);
+                        });
+                        var series_array = [];
+                        if (lang.isArray(sensor_data_rows)) {
+
+                            for (var i = 0; i !== sensor_data_rows.length; ++i) {
+                                var row = this.sensor_data_rows[i];
+                                if (rtutils.IsValidNumber(row.val.val)) {
+                                    series_array.push(row.val.val);
+                                }
+                            }
+                        }
+
+                        var option = {
+                          title: {
+                              text: sensor_mdl.name
+                          },
+                          tooltip: {},
+                          xAxis: {
+                              data: x_labels
+                          },
+                            yAxis: {},
+                            series: [
+                                {
+                                    type: 'line',
+                                    data: series_array
+                                }
+                            ]
+                      };
+                      return option;
                     };
 
                     var TestEcharts = function() {
@@ -205,7 +246,6 @@
                     };
                     InitEnv();
                     AfterLogin();
-                    TestEcharts();
 
                     on(registry.byId("query_btn_node"), "click", function (evt) {
                         var temp1 = BasicEnv.start_time_node.get("value");
