@@ -196,13 +196,13 @@
                         if (lang.isArray(sensor_data_rows)) {
 
                             for (var i = 0; i !== sensor_data_rows.length; ++i) {
-                                var row = this.sensor_data_rows[i];
+                                var row = sensor_data_rows[i];
                                 if (rtutils.IsValidNumber(row.val.val)) {
                                     series_array.push(row.val.val);
                                 }
                             }
                         }
-
+                        console.log("before opt");
                         var option = {
                           title: {
                               text: sensor_mdl.name
