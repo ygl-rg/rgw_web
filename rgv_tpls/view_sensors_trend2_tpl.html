@@ -188,7 +188,7 @@
                         var GetXLabelTextFunc = function (dt_obj1) {
                             return rtutils.DT2Str3(dt_obj1);
                         };
-                        var x_labels = darray.map(this.sensor_data_rows, function (item, i) {
+                        var x_labels = darray.map(sensor_data_rows, function (item, i) {
                             var dt_obj = rtutils.ts2date(item.cts);
                             return GetXLabelTextFunc(dt_obj);
                         });
@@ -202,7 +202,6 @@
                                 }
                             }
                         }
-                        console.log("before opt");
                         var option = {
                           title: {
                               text: sensor_mdl.name
