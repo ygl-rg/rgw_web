@@ -46,12 +46,9 @@
         BasicEnv.sessionid = "{{ sessionid }}";
         BasicEnv.sensor_tbl = {};
         BasicEnv.sensorids = [];
-        {%
-            for sensorid in sensorids %}
-        BasicEnv.sensorids.push("{{ sensorid }}");
-        {%
-            end %
-        }
+        {% for sensorid in sensorids %}
+            BasicEnv.sensorids.push("{{ sensorid }}");
+        {% end %}
     </script>
     <script src="/v/jslib/dojo/dojo.js"></script>
 
