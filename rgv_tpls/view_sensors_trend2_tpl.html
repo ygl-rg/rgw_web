@@ -162,7 +162,6 @@
                                         });
                                         var opt = MakeEChartOption(result.sensor_tbl[BasicEnv.sensorids[i]],
                                                 result.log_tbl[BasicEnv.sensorids[i]]);
-                                        console.log(opt);
                                         BasicEnv.echart.setOption(opt);
                                         /*
                                         trend_block.startup();
@@ -212,13 +211,6 @@
                                 data: x_labels
                             },
                             yAxis: {},
-                            dataZoom: [
-                                {   // This dataZoom component controls x-axis by dafault
-                                    type: 'slider', // this dataZoom component is dataZoom component of slider
-                                    start: 10,
-                                    end: 60
-                                }
-                            ],
                             series: [
                                 {
                                     type: 'line',
