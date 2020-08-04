@@ -46,9 +46,12 @@
         BasicEnv.sessionid = "{{ sessionid }}";
         BasicEnv.sensor_tbl = {};
         BasicEnv.sensorids = [];
-        {% for sensorid in sensorids %}
-            BasicEnv.sensorids.push("{{ sensorid }}");
-        {% end %}
+        {%
+            for sensorid in sensorids %}
+        BasicEnv.sensorids.push("{{ sensorid }}");
+        {%
+            end %
+        }
     </script>
     <script src="/v/jslib/dojo/dojo.js"></script>
 
@@ -79,24 +82,24 @@
                     <input data-dojo-type="dijit/form/TextBox"
                            data-dojo-props="trim:true, propercase:true, readonly:true"
                            type="text" required="required"
-                           id="start_time_node" style="width: 8em; " />
+                           id="start_time_node" style="width: 8em; "/>
                 </td>
                 <td>
                     <input data-dojo-type="dijit/form/TextBox"
                            data-dojo-props="trim:true, propercase:true, readonly:true"
                            type="text"
-                           id="stop_time_node" style="width: 8em; " required="required" />
+                           id="stop_time_node" style="width: 8em; " required="required"/>
                 </td>
                 <td>
-                        <button data-dojo-type="dijit/form/Button"
+                    <button data-dojo-type="dijit/form/Button"
                             id="query_btn_node">ok
-                        </button>
+                    </button>
                 </td>
             </tr>
         </table>
     </div>
     <div id="plotting_container_node" style="width: 98%; height: 90%;"
-             data-dojo-type="dijit/layout/ContentPane"></div>
+         data-dojo-type="dijit/layout/ContentPane"></div>
 
 </div>
 <div id="standby"></div>
@@ -148,20 +151,20 @@
                         //domc.empty(container_obj.domNode);
                         BasicEnv.standby.show();
                         return rtutils.Rpc2Deferred(em_rpc.FindSensorLog(BasicEnv.sessionid, {
-                                "sensorids": BasicEnv.sensorids,
-                                "start_ts": start_ts, "stop_ts": stop_ts
-                            })).then(
-                                    function (result) {
-                                        BasicEnv.standby.hide();
-                                        BasicEnv.sensor_tbl = result.sensor_tbl;
-                                        var chart_height = 80.0/BasicEnv.sensorids.length;
-                                        for(var i = 0; i!=BasicEnv.sensorids.length; ++i) {
+                            "sensorids": BasicEnv.sensorids,
+                            "start_ts": start_ts, "stop_ts": stop_ts
+                        })).then(
+                                function (result) {
+                                    BasicEnv.standby.hide();
+                                    BasicEnv.sensor_tbl = result.sensor_tbl;
+                                    var chart_height = 80.0 / BasicEnv.sensorids.length;
+                                    for (var i = 0; i != BasicEnv.sensorids.length; ++i) {
                                         var trend_block = new SensorTrendBlockUI({
                                             sensor_mdl: result.sensor_tbl[BasicEnv.sensorids[i]],
                                             sensor_data_rows: result.log_tbl[BasicEnv.sensorids[i]]
                                         });
                                         var opt = MakeEChartOption(result.sensor_tbl[BasicEnv.sensorids[i]],
-                                                                   result.log_tbl[BasicEnv.sensorids[i]]);
+                                                result.log_tbl[BasicEnv.sensorids[i]]);
                                         console.log(opt);
                                         BasicEnv.echart.setOption(opt);
                                         /*
@@ -175,16 +178,16 @@
 
                                     }
 
-                                    },
-                                    function (err) {
-                                        BasicEnv.standby.hide();
-                                        rtutils.ReloadWhenExpired(err);
-                                        console.log(err);
-                                    }
-                            );
+                                },
+                                function (err) {
+                                    BasicEnv.standby.hide();
+                                    rtutils.ReloadWhenExpired(err);
+                                    console.log(err);
+                                }
+                        );
                     };
 
-                    var MakeEChartOption = function(sensor_mdl, sensor_data_rows) {
+                    var MakeEChartOption = function (sensor_mdl, sensor_data_rows) {
                         var GetXLabelTextFunc = function (dt_obj1) {
                             return rtutils.DT2Str3(dt_obj1);
                         };
@@ -203,43 +206,52 @@
                             }
                         }
                         var option = {
-                          title: {
-                              text: sensor_mdl.name
-                          },
-                          tooltip: {},
-                          xAxis: {
-                              data: x_labels
-                          },
+                            title: {
+                                text: sensor_mdl.name
+                            },
+                            tooltip: {},
+                            xAxis: {
+                                type: 'value',
+                                data: x_labels
+                            },
                             yAxis: {},
+                            dataZoom: [
+                                {   // This dataZoom component controls x-axis by dafault
+                                    type: 'slider', // this dataZoom component is dataZoom component of slider
+                                    start: 10,
+                                    end: 60
+                                }
+                            ],
                             series: [
                                 {
                                     type: 'line',
                                     data: series_array
                                 }
                             ]
-                      };
-                      return option;
+                        };
+                        return option;
                     };
 
-                    var TestEcharts = function() {
-                      var option = {
-                                    title: {
-                                            text: 'ECharts entry example'
-                                            },
-                                    tooltip: {},
+                    var TestEcharts = function () {
+                        var option = {
+                            title: {
+                                text: 'ECharts entry example'
+                            },
+                            tooltip: {},
                             legend: {
-                                    data:['Sales']
+                                data: ['Sales']
                             },
                             xAxis: {
-                                    data: ["shirt","cardign","chiffon shirt","pants","heels","socks"]
+                                data: ["shirt", "cardign", "chiffon shirt", "pants", "heels", "socks"]
                             },
-                           yAxis: {},
-                    series: [{
-                    name: 'Sales',
-                     type: 'bar',
-                     data: [5, 20, 36, 10, 10, 20]
-                   }]
-        };              BasicEnv.echart.setOption(option);
+                            yAxis: {},
+                            series: [{
+                                name: 'Sales',
+                                type: 'bar',
+                                data: [5, 20, 36, 10, 10, 20]
+                            }]
+                        };
+                        BasicEnv.echart.setOption(option);
                     };
 
                     var AfterLogin = function () {
@@ -251,20 +263,19 @@
                         var temp1 = BasicEnv.start_time_node.get("value");
                         var temp2 = BasicEnv.stop_time_node.get("value");
                         //BasicEnv.chart_type = dquery("input[type=radio][name=chart_type]:checked")[0].value;
-                        if(lang.isString(temp1) && temp1.length > 0 && lang.isString(temp2) && temp2.length > 0) {
+                        if (lang.isString(temp1) && temp1.length > 0 && lang.isString(temp2) && temp2.length > 0) {
                             SyncLog(temp1, temp2);
-                        }
-                        else {
+                        } else {
                             alert(rtutils.GetLangField(multi_lang.msgs["please_input_time"], BasicEnv.lang));
                         }
                     });
 
-                    on(dom.byId("start_time_node"), "click", function(evt) {
-                        WdatePicker({dateFmt:'yyyy/MM/dd HH:mm', lang:'en', el: "start_time_node"});
+                    on(dom.byId("start_time_node"), "click", function (evt) {
+                        WdatePicker({dateFmt: 'yyyy/MM/dd HH:mm', lang: 'en', el: "start_time_node"});
                     });
 
-                    on(dom.byId("stop_time_node"), "click", function(evt) {
-                        WdatePicker({dateFmt:'yyyy/MM/dd HH:mm', lang:'en', el: "stop_time_node"});
+                    on(dom.byId("stop_time_node"), "click", function (evt) {
+                        WdatePicker({dateFmt: 'yyyy/MM/dd HH:mm', lang: 'en', el: "stop_time_node"});
                     });
                 });
             });
