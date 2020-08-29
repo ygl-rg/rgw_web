@@ -170,11 +170,10 @@
                                         BasicEnv.standby.hide();
                                         BasicEnv.sensor_tbl = result.sensor_tbl;
                                         var chart_height = 80.0/BasicEnv.sensorids.length;
-                                        for(var i = 0; i!=BasicEnv.sensorids.length; ++i) {
+                                        for(var i = 0; i!==BasicEnv.sensorids.length; ++i) {
                                         var trend_block = new SensorTrendBlockUI({
                                             sensor_mdl: result.sensor_tbl[BasicEnv.sensorids[i]],
-                                            sensor_data_rows: result.log_tbl[BasicEnv.sensorids[i]],
-                                            ts_series: result.ts_series
+                                            sensor_data_rows: result.log_tbl[BasicEnv.sensorids[i]]
                                         });
                                         trend_block.startup();
                                         container_obj.addChild(trend_block);
