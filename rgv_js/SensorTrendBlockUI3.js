@@ -61,7 +61,7 @@ define(["dojo/_base/declare", "dojo/on", "dojo/_base/lang", "dojo/_base/event", 
                 if(!this.chart_obj) {
                     this.chart_obj = echarts.init(this.chart_node, 'light');
                 }
-                this.chart_obj.resize();
+                //this.chart_obj.resize();
                 if (lang.isArray(this.sensor_data_rows)) {
                     var series_array = [];
                     for (var i = 0; i !== this.sensor_data_rows.length; ++i) {
