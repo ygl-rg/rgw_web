@@ -18,10 +18,10 @@
     <script type="text/javascript"
             src="/v/jslib/My9748/WdatePicker.js">
     </script>
+    <script src="/v/jslib/echarts.js"></script>
     <script>
         var dojoConfig = {
             parseOnLoad: true, async: true,
-            //gfxRenderer: "svg,silverlight,vml",
             packages: [
                 {"name": "shimmy", "location": location.pathname.match(/^\//) + "v/jslib/shimmy"},
                 {"name": "roundgis", "location": location.pathname.match(/^\//) + "v/js"},
@@ -44,7 +44,6 @@
         };
         BasicEnv.sessionid = "{{ sessionid }}";
         BasicEnv.sensor_tbl = {};
-        BasicEnv.chart_objs = [];
         BasicEnv.sensorids = [];
         {% for sensorid in sensorids %}
             BasicEnv.sensorids.push("{{ sensorid }}");
@@ -132,7 +131,7 @@
                 "dgrid/extensions/ColumnHider", "dgrid/Keyboard",
                 "dstore/Memory",
                 "roundgis/rtutils", "roundgis/dojo_utils",
-                "rgv/em_rpc", "rgv/SensorTrendBlockUI",
+                "rgv/em_rpc", "rgv/SensorTrendBlockUI3",
                 "rgv/multi_lang",
                 "dojo/ready"],
             function (parser, declare, lang, d_has, dwin, on, aspect, dquery, dom, domc, domclass, dgeom, darray, domstyle, Deferred,
@@ -184,7 +183,6 @@
                                         domc.create("div", {"style": "display: block; margin: 0; padding: 0.6em 0;"}, container_obj.domNode);
                                         trend_block.Update();
                                     }
-
                                     },
                                     function (err) {
                                         BasicEnv.standby.hide();
