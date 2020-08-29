@@ -66,9 +66,7 @@ define(["dojo/_base/declare", "dojo/on", "dojo/_base/lang", "dojo/_base/event", 
                     var series_array = [];
                     for (var i = 0; i !== this.sensor_data_rows.length; ++i) {
                         var row = this.sensor_data_rows[i];
-                        if (rtutils.IsValidNumber(row.val.val)) {
-                            series_array.push(row.avg_val);
-                        }
+                        series_array.push(row.avg_val);
                     }
                     var x_labels = darray.map(this.ts_series, function (item, i) {
                         var dt_obj = rtutils.ts2date(item);
