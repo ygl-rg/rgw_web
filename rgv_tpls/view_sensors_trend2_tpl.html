@@ -145,7 +145,7 @@
                         var start_ts = rtutils.date2ts(new Date(start_str));
                         var stop_ts = rtutils.date2ts(new Date(stop_str));
                         var container_obj = registry.byId("plotting_container_node");
-                        //domc.empty(container_obj.domNode);
+                        domc.empty(container_obj.domNode);
                         BasicEnv.standby.show();
                         return rtutils.Rpc2Deferred(em_rpc.FindSensorLog(BasicEnv.sessionid, {
                             "sensorids": BasicEnv.sensorids,
