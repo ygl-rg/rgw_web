@@ -116,7 +116,7 @@
                 "dgrid/extensions/ColumnHider", "dgrid/Keyboard",
                 "dstore/Memory",
                 "roundgis/rtutils", "roundgis/dojo_utils",
-                "rgv/em_rpc", "rgv/SensorTrendBlockUI2",
+                "rgv/em_rpc", "rgv/SensorTrendBlockUI3",
                 "rgv/multi_lang",
                 "dojo/ready"],
             function (parser, declare, lang, d_has, dwin, on, aspect, dquery, dom, domc, domclass, dgeom, darray, domstyle, Deferred,
@@ -160,18 +160,16 @@
                                             sensor_mdl: result.sensor_tbl[BasicEnv.sensorids[i]],
                                             sensor_data_rows: result.log_tbl[BasicEnv.sensorids[i]]
                                         });
-                                        var opt = MakeEChartOption(result.sensor_tbl[BasicEnv.sensorids[i]],
-                                                result.log_tbl[BasicEnv.sensorids[i]]);
-                                        BasicEnv.echart.setOption(opt);
-                                        /*
+                                        //var opt = MakeEChartOption(result.sensor_tbl[BasicEnv.sensorids[i]],
+                                        //        result.log_tbl[BasicEnv.sensorids[i]]);
+                                        //BasicEnv.echart.setOption(opt);
+
                                         trend_block.startup();
                                         container_obj.addChild(trend_block);
                                         trend_block.SetHeight(chart_height.toFixed(0)+"%");
                                         trend_block.SetWidth("98%");
                                         domc.create("div", {"style": "display: block; margin: 0; padding: 0.6em 0;"}, container_obj.domNode);
                                         trend_block.Update();
-                                         */
-
                                     }
 
                                 },
