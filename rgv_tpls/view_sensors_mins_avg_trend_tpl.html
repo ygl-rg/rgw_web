@@ -18,7 +18,7 @@
     <script type="text/javascript"
             src="/v/jslib/My9748/WdatePicker.js">
     </script>
-    <script src="/v/jslib/echarts.js"></script>
+    <script src="/v/jslib/echarts.min.js"></script>
     <script>
         var dojoConfig = {
             parseOnLoad: true, async: true,
@@ -180,7 +180,7 @@
                                         container_obj.addChild(trend_block);
                                         trend_block.SetHeight(chart_height.toFixed(0)+"%");
                                         trend_block.SetWidth("98%");
-                                        domc.create("div", {"style": "display: block; margin: 0; padding: 0.6em 0;"}, container_obj.domNode);
+                                        //domc.create("div", {"style": "display: block; margin: 0; padding: 0.6em 0;"}, container_obj.domNode);
                                         trend_block.Update();
                                     }
                                     },
